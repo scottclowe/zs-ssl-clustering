@@ -446,10 +446,19 @@ def get_parser():
         type=int,
         help="Random number generator (RNG) seed. Default: not controlled",
     )
-    group.add_argument(
+    mx_group = group.add_mutually_exclusive_group()
+    mx_group.add_argument(
         "--deterministic",
+        dest="deterministic",
         action="store_true",
-        help="Disable non-deterministic features of cuDNN.",
+        default=True,
+        help="Only use deterministic cuDNN features (disabled by default).",
+    )
+    mx_group.add_argument(
+        "--non-deterministic",
+        dest="deterministic",
+        action="store_false",
+        help="Enable non-deterministic features of cuDNN.",
     )
     # Hardware configuration args ---------------------------------------------
     group = parser.add_argument_group("Hardware configuration")
