@@ -195,8 +195,8 @@ def run_one_worker(gpu, ngpus_per_node, config):
 
     # DATASET =================================================================
     # Transforms --------------------------------------------------------------
-    transform_train, transform_eval = data_transformations.get_transform(
-        config.transform_type,
+    transform_eval = data_transformations.get_transform(
+        config.zoom_ratio,
         image_size=config.image_size,
     )
 
@@ -294,7 +294,7 @@ def get_output_path(config):
     fname = utils.sanitize_filename(fname)
     fname = os.path.join(
         config.output_dir,
-        utils.sanitize_filename(config.partition),
+        utils.sanitize_filename(config.partition + f"__z{config.zoom_ratio}"),
         fname,
     )
     return fname
@@ -410,10 +410,10 @@ def get_parser():
         help="Attempt to download the dataset if it is not found locally.",
     )
     group.add_argument(
-        "--transform-type",
-        type=str,
-        default="cifar",
-        help="Name of augmentation stack to apply to training data. Default: %(default)s",
+        "--zoom-ratio",
+        type=float,
+        default=1.0,
+        help="Ratio of how much of the image to zoom in on. Default: %(default)s",
     )
     group.add_argument(
         "--image-size",
