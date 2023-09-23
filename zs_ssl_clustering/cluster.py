@@ -9,7 +9,7 @@ from sklearn.metrics import adjusted_mutual_info_score as AMI
 from sklearn.metrics import adjusted_rand_score as ARAND
 from sklearn.metrics import silhouette_score as SIL
 
-from zs_ssl_clustering import utils
+from zs_ssl_clustering import io, utils
 
 
 def run(config):
@@ -34,13 +34,7 @@ def run(config):
     if config.run_id is None:
         config.run_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    path = os.path.join(
-        config.embedding_dir,
-        utils.sanitize_filename(config.partition + f"__z{config.zoom_ratio}"),
-        f"{config.dataset_name}__{config.model}.npz",
-    )
-
-    data = np.load(path)
+    data = np.load(io.get_embeddings_path(config))
     embeddings = data["embeddings"]
     y_true = data["y_true"]
     n_clusters_gt = len(np.unique(y_true))

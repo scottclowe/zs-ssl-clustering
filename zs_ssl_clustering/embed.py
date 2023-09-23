@@ -12,7 +12,7 @@ import torch.utils.data
 from torch import nn
 from torch.utils.data.distributed import DistributedSampler
 
-from zs_ssl_clustering import data_transformations, datasets, encoders, utils
+from zs_ssl_clustering import data_transformations, datasets, encoders, io, utils
 
 
 def run(config):
@@ -271,7 +271,7 @@ def run_one_worker(gpu, ngpus_per_node, config):
         dataloader, encoder, device, is_distributed=config.distributed
     )
     print(f"Created {len(embeddings)} embeddings in {time.time() - t0:.2f}s")
-    fname = get_output_path(config)
+    fname = io.get_embeddings_path(config)
     # Save embeddings
     if config.gpu_rank == 0:
         os.makedirs(os.path.dirname(fname), exist_ok=True)
@@ -287,20 +287,6 @@ def run_one_worker(gpu, ngpus_per_node, config):
         )
         os.rename(tmp_fname, fname)
         print(f"Saved embeddings in {time.time() - t1:.2f}s")
-
-
-def get_output_path(config):
-    """
-    Generate path to embeddings file.
-    """
-    fname = config.dataset_name + "__" + config.model + ".npz"
-    fname = utils.sanitize_filename(fname)
-    fname = os.path.join(
-        config.output_dir,
-        utils.sanitize_filename(config.partition + f"__z{config.zoom_ratio}"),
-        fname,
-    )
-    return fname
 
 
 def embed_dataset(dataloader, encoder, device, is_distributed=False):
