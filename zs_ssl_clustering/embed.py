@@ -274,13 +274,11 @@ def run_one_worker(gpu, ngpus_per_node, config):
         t1 = time.time()
         tmp_a, tmp_b = os.path.split(fname)
         tmp_fname = os.path.join(tmp_a, ".tmp." + tmp_b)
-        torch.save(
-            {
-                "config": config,
-                "embeddings": embeddings,
-                "y_true": y_true,
-            },
+        np.savez_compressed(
             tmp_fname,
+            config=config,
+            embeddings=embeddings,
+            y_true=y_true,
         )
         os.rename(tmp_fname, fname)
         print(f"Saved embeddings in {time.time() - t1:.2f}s")
@@ -290,7 +288,7 @@ def get_output_path(config):
     """
     Generate path to embeddings file.
     """
-    fname = config.dataset_name + "__" + config.model + ".pt"
+    fname = config.dataset_name + "__" + config.model + ".npz"
     fname = utils.sanitize_filename(fname)
     fname = os.path.join(
         config.output_dir,
