@@ -16,7 +16,7 @@
 #SBATCH --open-mode=append          # Use append mode otherwise preemption resets the checkpoint file.
 #SBATCH --qos=normal                # Quality of service. Sometimes you want to use high or deadline, but you can't use them all the time.
                                     # you'll need to specify --account=deadline if you use --qos=deadline
-#SBATCH --job-name=zs-ssl-clustering    # Set this to be a shorthand for your project's name.
+#SBATCH --job-name=zs-ssl-embed     # Set this to be a shorthand for your project's name.
 
 # Manually define the project name.
 # This must also be the name of your conda environment used for this project.
@@ -166,8 +166,6 @@ then
         --node-count="$SLURM_JOB_NUM_NODES" \
         --workers="$NUM_WORKERS" \
         --seed="$SEED" \
-        --model-output-dir="$CKPT_DIR" \
-        --resume="$CKPT_DIR/checkpoint_latest.pt" \
         --log-wandb \
         --run-name="$SLURM_JOB_NAME" \
         --run-id="$JOB_ID" \
@@ -216,8 +214,6 @@ worker_command() {
 --node-count="$SLURM_JOB_NUM_NODES" \
 --workers="$NUM_WORKERS" \
 --seed="$SEED" \
---model-output-dir="$CKPT_DIR" \
---resume="$CKPT_DIR/checkpoint_latest.pt" \
 --log-wandb \
 --run-name="$SLURM_JOB_NAME" \
 --run-id="$JOB_ID" \

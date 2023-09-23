@@ -2,7 +2,9 @@ import warnings
 
 import timm
 import torch
+import torchvision
 from timm.data import resolve_data_config
+from torch import nn
 
 
 def get_timm_encoder(model_name, pretrained=False, in_chans=3):
@@ -50,3 +52,50 @@ def get_timm_encoder(model_name, pretrained=False, in_chans=3):
     encoder_config["in_channels"] = encoder_config["input_size"][0]
 
     return encoder, encoder_config
+
+
+class TorchVisionEncoder(nn.Module):
+    def __init__(self, model_name="resnet50"):
+        super().__init__()
+        if model_name == "resnet50":
+            self.model = torchvision.models.resnet50(
+                weights=torchvision.models.ResNet50_Weights.IMAGENET1K_V2
+            )
+            self.model.fc = nn.Identity()
+        else:
+            raise ValueError(f"Unrecognized model: '{model_name}'.")
+
+    def forward(self, x):
+        return self.model(x)
+
+
+class TIMMEncoder(nn.Module):
+    def __init__(self, model_name="resnet50"):
+        super().__init__()
+        model_name = model_name.replace("timm_", "")
+        self.model, self.data_config = get_timm_encoder(model_name, pretrained=True)
+
+    def forward(self, x):
+        return self.model(x)
+
+
+class DINOv2(nn.Module):
+    def __init__(self, model_name="vits14"):
+        super().__init__()
+        if "dinov2_" not in model_name:
+            model_name = "dinov2_" + model_name
+        self.model = torch.hub.load("facebookresearch/dinov2", model_name)
+
+    def forward(self, x):
+        return self.model(x)
+
+
+def get_encoder(model_name):
+    if model_name.startswith("timm"):
+        return TIMMEncoder(model_name)
+
+    elif model_name.startswith("dinov2"):
+        return DINOv2(model_name)
+
+    else:
+        return TorchVisionEncoder(model_name)
