@@ -129,6 +129,7 @@ def run(config):
         clusterer = KMeans(
             n_clusters=n_clusters_gt,
             random_state=config.seed,
+            max_iter=1_000,
             init="k-means++",
             n_init=1,
         )
