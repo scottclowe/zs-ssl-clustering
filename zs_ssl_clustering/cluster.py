@@ -159,6 +159,8 @@ def run(config):
     # chosen clusterer.
     clusterer_args_unused = clusterer_args.difference(clusterer_args_used)
     for key in clusterer_args_unused:
+        if key == "distance_metric":
+            continue
         setattr(config, key, None)
 
     start_cluster = time.time()
@@ -186,6 +188,17 @@ def run(config):
             embeddings, y_pred, metric="euclidean"
         ),
     }
+    if config.distance_metric != "euclidean":
+        results[f"silhouette-{config.distance_metric}_true"] = (
+            sklearn.metrics.silhouette_score(
+                embeddings, y_true, metric=config.distance_metric
+            ),
+        )
+        results[f"silhouette-{config.distance_metric}_pred"] = (
+            sklearn.metrics.silhouette_score(
+                embeddings, y_pred, metric=config.distance_metric
+            ),
+        )
 
     print(
         f"\n{config.clusterer_name}({config.model_name}({config.dataset}))"
