@@ -114,7 +114,7 @@ def run(config):
         "aggclust_linkage",
         "aggclust_dist_thresh",
     }
-    clusterer_args_used = {}
+    clusterer_args_used = set()
     if clusterer_name == "AgglomerativeClustering":
         # Can work with specified number of clusters, as well as unknown (which requires a distance threshold)
         # We can also impose some structure metric through the "connectivity" argument
