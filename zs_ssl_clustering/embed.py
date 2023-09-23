@@ -5,6 +5,9 @@ import os
 import time
 import warnings
 
+import data_transformations
+import datasets
+import encoders
 import numpy as np
 import torch
 import torch.optim
@@ -76,16 +79,18 @@ def run_one_worker(gpu, ngpus_per_node, config):
 
         builtins.print = print_pass
 
+    try:
+        n_cpus = len(os.sched_getaffinity(0))
+    except BaseException:
+        n_cpus = "UNK"
+
     print()
     print("Configuration:")
     print()
     print(config)
     print()
     print(f"Node rank {config.node_rank}")
-    print(
-        f"Found {torch.cuda.device_count()} GPUs and"
-        f" {len(os.sched_getaffinity(0))} CPUs."
-    )
+    print(f"Found {torch.cuda.device_count()} GPUs and {n_cpus} CPUs.")
 
     if config.log_wandb:
         # Lazy import of wandb, since logging to wandb is optional
@@ -169,7 +174,10 @@ def run_one_worker(gpu, ngpus_per_node, config):
     print()
 
     if config.workers is None:
-        config.workers = len(os.sched_getaffinity(0))
+        if n_cpus != "UNK":
+            config.workers = n_cpus
+        else:
+            raise ValueError("Could not read the number of available CPUs")
 
     if not torch.cuda.is_available():
         print("Using CPU (this will be slow)")

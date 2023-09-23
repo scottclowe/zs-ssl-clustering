@@ -59,7 +59,7 @@ class TorchVisionEncoder(nn.Module):
         super().__init__()
         if model_name == "resnet18":
             self.model = torchvision.models.resnet18(
-                weights=torchvision.models.ResNet18_Weights.IMAGENET1K_V2
+                weights=torchvision.models.ResNet18_Weights.IMAGENET1K_V1
             )
         elif model_name == "resnet50":
             self.model = torchvision.models.resnet50(
