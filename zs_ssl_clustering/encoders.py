@@ -94,12 +94,29 @@ class DINOv2(nn.Module):
         return self.model(x)
 
 
+class CLIP(nn.Module):
+    def __init__(self, model_name="ViT-B/32"):
+        super().__init__()
+
+        import clip
+
+        model_name = model_name.replace("clip_", "")
+
+        self.model, self.transform = clip.load(model_name)
+
+    def forward(self, x):
+        return self.model.encode_image(x)
+
+
 def get_encoder(model_name):
     if model_name.startswith("timm"):
         return TIMMEncoder(model_name)
 
     elif model_name.startswith("dinov2"):
         return DINOv2(model_name)
+
+    elif model_name.startswith("clip"):
+        return CLIP(model_name)
 
     else:
         return TorchVisionEncoder(model_name)
