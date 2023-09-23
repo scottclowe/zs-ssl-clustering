@@ -172,6 +172,13 @@ def run(config):
         "num_cluster_pred": len(np.unique(y_pred)),
         "AMI": sklearn.metrics.adjusted_mutual_info_score(y_true, y_pred),
         "ARI": sklearn.metrics.adjusted_rand_score(y_true, y_pred),
+        "FMS": sklearn.metrics.fowlkes_mallows_score(y_true, y_pred),
+        "completeness": sklearn.metrics.completeness_score(y_true, y_pred),
+        "homogeneity": sklearn.metrics.homogeneity_score(y_true, y_pred),
+        "CHS_true": sklearn.metrics.calinski_harabasz_score(embeddings, y_true),
+        "CHS_pred": sklearn.metrics.calinski_harabasz_score(embeddings, y_pred),
+        "DBS_true": sklearn.metrics.davies_bouldin_score(embeddings, y_true),
+        "DBS_pred": sklearn.metrics.davies_bouldin_score(embeddings, y_pred),
         "silhouette_true": sklearn.metrics.silhouette_score(
             embeddings, y_true, metric="euclidean"
         ),
