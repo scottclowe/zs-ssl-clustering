@@ -3,7 +3,6 @@ import time
 from datetime import datetime
 
 import numpy as np
-import torch
 import utils
 from sklearn.cluster import HDBSCAN, AgglomerativeClustering, KMeans, SpectralClustering
 from sklearn.decomposition import PCA, KernelPCA
@@ -36,11 +35,11 @@ def run(config):
 
     path = os.path.join(
         config.embedding_dir,
-        config.partition,
-        f"{config.dataset_name}__{config.model}.pt",
+        utils.sanitize_filename(config.partition + f"__z{config.zoom_ratio}"),
+        f"{config.dataset_name}__{config.model}.npz",
     )
 
-    data = torch.load(path)
+    data = np.load(path)
     embeddings = data["embeddings"]
     y_true = data["y_true"]
     n_clusters_gt = len(np.unique(y_true))
@@ -199,6 +198,12 @@ def get_parser():
         type=str,
         default="test",
         help="Which partition of the dataset to use. Default: %(default)s",
+    )
+    group.add_argument(
+        "--zoom-ratio",
+        type=float,
+        default=1.0,
+        help="Ratio of how much of the image to zoom in on. Default: %(default)s",
     )
     # Architecture args -------------------------------------------------------
     group = parser.add_argument_group("Architecture")
