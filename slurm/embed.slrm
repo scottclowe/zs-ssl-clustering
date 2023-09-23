@@ -95,27 +95,6 @@ source "slurm/utils/report_env_config.sh"
 echo "Running slurm/utils/set_job-label.sh"
 source "slurm/utils/set_job-label.sh"
 
-# Set checkpoint directory ($CKPT_DIR) environment variables
-# N.B. This script assigns some environment variables ($CKPT_DIR) that we use later,
-# and initalizes our checkpoint output directory and adds a local symbolic link to it.
-echo "Running slurm/utils/set_output_paths_vector.sh"
-source "slurm/utils/set_output_paths_vector.sh"
-
-# Save a list of installed packages and their versions to a file in the output directory
-conda env export > "$CKPT_DIR/environment.yml"
-pip freeze > "$CKPT_DIR/frozen-requirements.txt"
-
-if [[ "$SLURM_RESTART_COUNT" > 0 && ! -f "$CKPT_DIR/checkpoint_latest.pt" ]];
-then
-    echo ""
-    echo "====================================================================="
-    echo "WARNING:"
-    echo "    Resuming after pre-emption (SLURM_RESTART_COUNT=$SLURM_RESTART_COUNT)"
-    echo "    but there is no checkpoint file at $CKPT_DIR/checkpoint_latest.pt"
-    echo "====================================================================="
-    echo ""
-fi;
-
 echo ""
 echo "-------- Begin main script ---------------------------------------------"
 date
@@ -149,11 +128,6 @@ then
     #
     # We just need to call the embed.py script once and embed.py will launch a
     # process for each GPU on that node automatically.
-    #
-    # We pass the CKPT_DIR environment variable on as the output path for our
-    # python script, and also try to resume from a checkpoint in this directory
-    # in case of pre-emption. The python script should run from scratch if there
-    # is no checkpoint at this path to resume from.
     #
     # We pass on to embed.py an arary of arbitrary extra arguments given to this
     # slurm script contained in the $@ magic variable (i.e. "${@}")
@@ -243,39 +217,6 @@ EOM
 
 fi
 
-echo ""
-echo "------------------------------------"
-elapsed=$(( SECONDS - start_time ))
-eval "echo Running total elapsed time: $(date -ud "@$elapsed" +'$((%s/3600/24)) days %H hr %M min %S sec')"
-echo ""
-# By overriding the JOB_OUTPUT_DIR environment variable, we disable saving
-# checkpoints to long-term storage. This is disabled by default to preserve
-# disk space. When you are sure your job config is correct and you are sure
-# you need to save your checkpoints for posterity, comment out this line.
-JOB_OUTPUT_DIR=""
-#
-if [[ "$CKPT_DIR" == "" ]];
-then
-    # This shouldn't ever happen, but we have a check for just in case.
-    # If $CKPT_DIR were somehow not set, we would mistakenly try to copy far
-    # too much data to $JOB_OUTPUT_DIR.
-    echo "CKPT_DIR is unset. Will not copy outputs to $JOB_OUTPUT_DIR."
-elif [[ "$JOB_OUTPUT_DIR" == "" ]];
-then
-    echo "JOB_OUTPUT_DIR is unset. Will not copy outputs from $CKPT_DIR."
-else
-    echo "-------- Saving outputs for long term storage --------------------------"
-    date
-    echo ""
-    echo "Copying outputs from $CKPT_DIR to $JOB_OUTPUT_DIR"
-    mkdir -p "$JOB_OUTPUT_DIR"
-    rsync -rutlzv "$CKPT_DIR/" "$JOB_OUTPUT_DIR/"
-    echo ""
-    echo "Output contents of ${JOB_OUTPUT_DIR}:"
-    ls -lh "$JOB_OUTPUT_DIR"
-    # Set up a symlink to the long term storage directory
-    ln -sfn "$OUTPUT_DIR" "checkpoints_finished"
-fi
 echo ""
 echo "------------------------------------------------------------------------"
 echo ""
