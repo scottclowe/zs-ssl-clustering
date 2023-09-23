@@ -126,7 +126,12 @@ def run(config):
             metric=config.distance_metric,
         )
     elif cluster_method == "KMeans":
-        clusterer = KMeans(n_clusters=n_clusters_gt, random_state=config.seed)
+        clusterer = KMeans(
+            n_clusters=n_clusters_gt,
+            random_state=config.seed,
+            init="k-means++",
+            n_init=1,
+        )
     elif cluster_method == "Spectral":
         # TODO Look into this:
         # Requires the number of clusters
