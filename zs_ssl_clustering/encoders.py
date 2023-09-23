@@ -57,13 +57,17 @@ def get_timm_encoder(model_name, pretrained=False, in_chans=3):
 class TorchVisionEncoder(nn.Module):
     def __init__(self, model_name="resnet50"):
         super().__init__()
-        if model_name == "resnet50":
+        if model_name == "resnet18":
+            self.model = torchvision.models.resnet18(
+                weights=torchvision.models.ResNet18_Weights.IMAGENET1K_V2
+            )
+        elif model_name == "resnet50":
             self.model = torchvision.models.resnet50(
                 weights=torchvision.models.ResNet50_Weights.IMAGENET1K_V2
             )
-            self.model.fc = nn.Identity()
         else:
             raise ValueError(f"Unrecognized model: '{model_name}'.")
+        self.model.fc = nn.Identity()
 
     def forward(self, x):
         return self.model(x)
