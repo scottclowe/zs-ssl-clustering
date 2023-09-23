@@ -3,12 +3,13 @@ import time
 from datetime import datetime
 
 import numpy as np
-import utils
 from sklearn.cluster import HDBSCAN, AgglomerativeClustering, KMeans, SpectralClustering
 from sklearn.decomposition import PCA, KernelPCA
 from sklearn.metrics import adjusted_mutual_info_score as AMI
 from sklearn.metrics import adjusted_rand_score as ARAND
 from sklearn.metrics import silhouette_score as SIL
+
+from zs_ssl_clustering import utils
 
 
 def run(config):
