@@ -292,7 +292,11 @@ def get_output_path(config):
     """
     fname = config.dataset_name + "__" + config.model + ".pt"
     fname = utils.sanitize_filename(fname)
-    fname = os.path.join(config.output_dir, fname)
+    fname = os.path.join(
+        config.output_dir,
+        utils.sanitize_filename(config.partition),
+        fname,
+    )
     return fname
 
 
