@@ -49,6 +49,7 @@ def run(config):
     if config.run_id is None:
         config.run_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
+    # Only need allow_pickle=True if we're using the saved config dict
     data = np.load(io.get_embeddings_path(config))
     embeddings = data["embeddings"]
     y_true = data["y_true"]
