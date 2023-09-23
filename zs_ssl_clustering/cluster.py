@@ -145,7 +145,7 @@ def run(config):
             init="k-means++",
             n_init=1,
         )
-    elif clusterer_name == "Spectral":
+    elif clusterer_name == "SpectralClustering":
         # TODO Look into this:
         # Requires the number of clusters
         # Can be estimated through e.g.
