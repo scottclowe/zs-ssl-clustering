@@ -20,12 +20,11 @@ def get_transform(zoom_ratio=1.0, image_size=224, args=None):
         std = args["std"]
 
     steps = [
-        transforms.Resize(int(image_size / 0.875)),
         transforms.CenterCrop(image_size),
         transforms.ToTensor(),
         transforms.Normalize(mean=torch.tensor(mean), std=torch.tensor(std)),
     ]
     if zoom_ratio != 1.0:
-        steps.insert(0, transforms.Resize(int(image_size / 0.875 * zoom_ratio)))
+        steps.insert(0, transforms.Resize(int(image_size / zoom_ratio)))
     transform = transforms.Compose(steps)
     return transform
