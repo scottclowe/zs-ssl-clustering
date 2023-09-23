@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 
 import numpy as np
+import sklearn.metrics
 from sklearn.cluster import HDBSCAN, AgglomerativeClustering, KMeans, SpectralClustering
 from sklearn.decomposition import PCA, KernelPCA
 from sklearn.metrics import adjusted_mutual_info_score as AMI
@@ -115,12 +116,15 @@ def run(config):
         # We can also impose some structure metric through the "connectivity" argument
         clusterer = AgglomerativeClustering(
             n_clusters=None,
-            metric=config.aggclust_metric,
+            metric=config.distance_metric,
             linkage=config.aggclust_linkage,
             distance_threshold=config.aggclust_dist_thresh,
         )
     elif cluster_method == "HDBSCAN":
-        clusterer = HDBSCAN(min_cluster_size=2)
+        clusterer = HDBSCAN(
+            min_cluster_size=2,
+            metric=config.distance_metric,
+        )
     elif cluster_method == "KMeans":
         clusterer = KMeans(n_clusters=n_clusters_gt, random_state=config.seed)
     elif cluster_method == "Spectral":
@@ -283,7 +287,13 @@ def get_parser():
         choices=["KMeans", "HDBSCAN", "AgglomerativeClustering", "SpectralClustering"],
         help="Method to cluster embeddings with",
     )
-
+    group.add_argument(
+        "--distance-metric",
+        type=str,
+        default="euclidean",
+        choices=list(sklearn.metrics.pairwise.PAIRWISE_DISTANCE_FUNCTIONS.keys()),
+        help="Metric function for clustering methods",
+    )
     group.add_argument(
         "--aggclust-linkage",
         type=str,
@@ -296,13 +306,6 @@ def get_parser():
         type=float,
         default=1,
         help="Distance threshold for agglomerative clustering method",
-    )
-    group.add_argument(
-        "--aggclust-metric",
-        type=str,
-        default="euclidean",
-        choices=["euclidean", "manhattan", "cosine"],
-        help="Metric function for agglomerative clustering method",
     )
 
     # TODO Add more arguments for clustering
