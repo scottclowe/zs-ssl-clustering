@@ -444,7 +444,8 @@ def get_parser():
     group.add_argument(
         "--seed",
         type=int,
-        help="Random number generator (RNG) seed. Default: not controlled",
+        default=0,
+        help="Random number generator (RNG) seed. Default: %(default)s",
     )
     mx_group = group.add_mutually_exclusive_group()
     mx_group.add_argument(
