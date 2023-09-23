@@ -174,11 +174,11 @@ def run(config):
     silhouette_score = SIL(embeddings, y_true, metric="euclidean")
 
     print(f"Cluster Fitting time: {end_cluster-start_cluster:.2f}s")
-    print(f"Number of clusters GT\t{n_clusters_gt}")
-    print(f"Number of clusters Pred\t{n_clusters_pred}")
-    print(f"AMI\t{ami_score}")
-    print(f"ARand\t{arand_score}")
-    print(f"Silhouette\t{silhouette_score}")
+    print(f"Number of clusters true: {n_clusters_gt:<3d}")
+    print(f"Number of clusters pred: {n_clusters_pred:<3d}")
+    print(f"AMI ........... {ami_score:.4f}")
+    print(f"ARand ......... {arand_score:.4f}")
+    print(f"Silhouette .... {silhouette_score:.4f}")
 
     if config.log_wandb:
         wandb.log(
