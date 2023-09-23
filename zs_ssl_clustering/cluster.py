@@ -171,7 +171,7 @@ def run(config):
         "num_cluster_true": n_clusters_gt,
         "num_cluster_pred": len(np.unique(y_pred)),
         "AMI": sklearn.metrics.adjusted_mutual_info_score(y_true, y_pred),
-        "ARand": sklearn.metrics.adjusted_rand_score(y_true, y_pred),
+        "ARI": sklearn.metrics.adjusted_rand_score(y_true, y_pred),
         "Silhouette": sklearn.metrics.silhouette_score(
             embeddings, y_true, metric="euclidean"
         ),
