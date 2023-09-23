@@ -423,11 +423,11 @@ def get_parser():
     # Output checkpoint args --------------------------------------------------
     group = parser.add_argument_group("Output checkpoint")
     group.add_argument(
-        "--output-dir",
+        "--embedding-dir",
         type=str,
         metavar="PATH",
         default="embeddings",
-        help="Path to output directory.",
+        help="Path to directory containing embeddings.",
     )
     # Reproducibility args ----------------------------------------------------
     group = parser.add_argument_group("Reproducibility")

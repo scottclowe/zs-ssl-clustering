@@ -231,7 +231,7 @@ def get_parser():
         type=str,
         metavar="PATH",
         default="embeddings",
-        help="Path to output directory.",
+        help="Path to directory containing embeddings.",
     )
     # Reproducibility args ----------------------------------------------------
     group = parser.add_argument_group("Reproducibility")

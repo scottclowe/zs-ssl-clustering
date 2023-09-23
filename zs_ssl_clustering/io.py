@@ -48,7 +48,7 @@ def get_embeddings_path(config):
     fname = config.dataset_name + "__" + config.model + ".npz"
     fname = sanitize_filename(fname)
     fname = os.path.join(
-        config.output_dir,
+        config.embedding_dir,
         sanitize_filename(config.partition + f"__z{config.zoom_ratio}"),
         fname,
     )
