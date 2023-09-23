@@ -141,13 +141,13 @@ if [[ "$SLURM_JOB_NUM_NODES" == "1" ]];
 then
     # Single node configuration
     # This is simpler than the multi-GPU configuration, as we only have to
-    # launch one train.py process.
+    # launch one embed.py process.
     echo ""
     echo "Main script begins with host tcp://localhost:$MASTER_PORT with backend NCCL"
     echo "Single ($SLURM_JOB_NUM_NODES) node training ($SLURM_GPUS_ON_NODE GPUs)"
     echo ""
     #
-    # We just need to call the train.py script once and train.py will launch a
+    # We just need to call the embed.py script once and embed.py will launch a
     # process for each GPU on that node automatically.
     #
     # We pass the CKPT_DIR environment variable on as the output path for our
@@ -155,12 +155,12 @@ then
     # in case of pre-emption. The python script should run from scratch if there
     # is no checkpoint at this path to resume from.
     #
-    # We pass on to train.py an arary of arbitrary extra arguments given to this
+    # We pass on to embed.py an arary of arbitrary extra arguments given to this
     # slurm script contained in the $@ magic variable (i.e. "${@}")
     #
     # N.B. If you alter this, be sure to alter the multi-GPU implementation
     # below too!
-    python "$PROJECT_DIRN/train.py" \
+    python "$PROJECT_DIRN/embed.py" \
         --rank=0 \
         --dist-url="tcp://localhost:$MASTER_PORT" \
         --node-count="$SLURM_JOB_NUM_NODES" \
@@ -210,7 +210,7 @@ else
     cat > "$worker_script" <<- EOM
 sleep \$(( SLURM_PROCID * 5 ))
 worker_command() {
-    python $PROJECT_DIRN/train.py \
+    python $PROJECT_DIRN/embed.py \
 --rank="\${SLURM_PROCID}" \
 --dist-url="tcp://${MASTER_ADDR}:${MASTER_PORT}" \
 --node-count="$SLURM_JOB_NUM_NODES" \
@@ -241,7 +241,7 @@ EOM
     # task per node, each of these will run this command. The main worker
     # wrote the srun_worker_JOBLABEL.sh script and fixed the variables that
     # the other nodes need to know so they can communicate with each other.
-    # Once train.py is run on each node, it will handle spawning one process
+    # Once embed.py is run on each node, it will handle spawning one process
     # for each of the GPUs on the node.
     srun --nodes="$SLURM_JOB_NUM_NODES" bash "$worker_script"
 
