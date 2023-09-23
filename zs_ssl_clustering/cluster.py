@@ -9,7 +9,7 @@ from sklearn.metrics import adjusted_mutual_info_score as AMI
 from sklearn.metrics import adjusted_rand_score as ARAND
 from sklearn.metrics import silhouette_score as SIL
 
-from zs_ssl_clustering import io, utils
+from zs_ssl_clustering import io
 
 
 def run(config):
@@ -17,13 +17,27 @@ def run(config):
         # Lazy import of wandb, since logging to wandb is optional
         import wandb
 
-        utils.init_or_resume_wandb_run(
-            None,
-            name=config.run_id,
+        wandb_run_name = config.run_name
+        if wandb_run_name is not None and config.run_id is not None:
+            wandb_run_name = f"{wandb_run_name}__{config.run_id}"
+        wandb.init(
+            name=wandb_run_name,
+            id=config.run_id,
             entity=config.wandb_entity,
             project=config.wandb_project,
             group=config.wandb_group,
             config=config,
+            job_type="cluster",
+            tags=config.wandb_tags,
+            config_exclude_keys=[
+                "log_wandb",
+                "wandb_entity",
+                "wandb_project",
+                "wandb_tags",
+                "wandb_group",
+                "run_name",
+                "run_id",
+            ],
         )
         # If a run_id was not supplied at the command prompt, wandb will
         # generate a name. Let's use that as the run_id.
