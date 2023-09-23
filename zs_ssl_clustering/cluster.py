@@ -6,9 +6,6 @@ import numpy as np
 import sklearn.metrics
 from sklearn.cluster import HDBSCAN, AgglomerativeClustering, KMeans, SpectralClustering
 from sklearn.decomposition import PCA, KernelPCA
-from sklearn.metrics import adjusted_mutual_info_score as AMI
-from sklearn.metrics import adjusted_rand_score as ARAND
-from sklearn.metrics import silhouette_score as SIL
 
 from zs_ssl_clustering import io
 
@@ -169,29 +166,32 @@ def run(config):
     end_cluster = time.time()
 
     y_pred = clusterer.labels_
-    n_clusters_pred = len(np.unique(y_pred))
-    ami_score = AMI(y_true, y_pred)
-    arand_score = ARAND(y_true, y_pred)
-    silhouette_score = SIL(embeddings, y_true, metric="euclidean")
+    results = {
+        "time_clustering": end_cluster - start_cluster,
+        "num_cluster_true": n_clusters_gt,
+        "num_cluster_pred": len(np.unique(y_pred)),
+        "AMI": sklearn.metrics.adjusted_mutual_info_score(y_true, y_pred),
+        "ARand": sklearn.metrics.adjusted_rand_score(y_true, y_pred),
+        "Silhouette": sklearn.metrics.silhouette_score(
+            embeddings, y_true, metric="euclidean"
+        ),
+    }
 
-    print(f"Cluster Fitting time: {end_cluster-start_cluster:.2f}s")
-    print(f"Number of clusters true: {n_clusters_gt:<3d}")
-    print(f"Number of clusters pred: {n_clusters_pred:<3d}")
-    print(f"AMI ........... {ami_score:.4f}")
-    print(f"ARand ......... {arand_score:.4f}")
-    print(f"Silhouette .... {silhouette_score:.4f}")
+    print(
+        f"\n{config.clusterer}({config.model_name}({config.dataset})) evaluation results:"
+    )
+    for k, v in results.items():
+        if k == "time_clustering":
+            print(f"  {k + ' ':.<24s} {v:.4f} seconds")
+        elif isinstance(k, int):
+            print(f"  {k + ' ':.<24s} {v:>3d}")
+        else:
+            print(f"  {k + ' ':.<24s} {v:.4f}")
 
     if config.log_wandb:
-        wandb.log(
-            {
-                "AMI": ami_score,
-                "ARand": arand_score,
-                "Silhouette": silhouette_score,
-                "num_cluster_pred": n_clusters_pred,
-                "num_cluster_true": n_clusters_gt,
-                "time_clustering": end_cluster - start_cluster,
-            }
-        )
+        wandb.log(results)
+
+    return results
 
 
 def get_parser():
