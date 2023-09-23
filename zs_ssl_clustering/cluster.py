@@ -111,6 +111,12 @@ def run(config):
         embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
 
     cluster_method = config.cluster_method
+    clusterer_args = {
+        "distance_metric",
+        "aggclust_linkage",
+        "aggclust_dist_thresh",
+    }
+    clusterer_args_used = {}
     if cluster_method == "AgglomerativeClustering":
         # Can work with specified number of clusters, as well as unknown (which requires a distance threshold)
         # We can also impose some structure metric through the "connectivity" argument
@@ -120,11 +126,19 @@ def run(config):
             linkage=config.aggclust_linkage,
             distance_threshold=config.aggclust_dist_thresh,
         )
+        clusterer_args_used = clusterer_args_used.union(
+            {
+                "distance_metric",
+                "aggclust_linkage",
+                "aggclust_dist_thresh",
+            }
+        )
     elif cluster_method == "HDBSCAN":
         clusterer = HDBSCAN(
             min_cluster_size=2,
             metric=config.distance_metric,
         )
+        clusterer_args_used.add("distance_metric")
     elif cluster_method == "KMeans":
         clusterer = KMeans(
             n_clusters=n_clusters_gt,
@@ -142,6 +156,12 @@ def run(config):
         clusterer = SpectralClustering(
             n_clusters=n_clusters_gt, random_state=config.seed
         )
+
+    # Wipe the state of cluster arguments that were not relevant to the
+    # chosen clusterer.
+    clusterer_args_unused = clusterer_args.difference(clusterer_args_used)
+    for key in clusterer_args_unused:
+        setattr(config, key, None)
 
     start_cluster = time.time()
     clusterer.fit(embeddings)
