@@ -186,9 +186,9 @@ def run(config):
                 "AMI": ami_score,
                 "ARand": arand_score,
                 "Silhouette": silhouette_score,
-                "Clusters_pred": n_clusters_pred,
-                "Clusters_gt": n_clusters_gt,
-                "Fitting_time": end_cluster - start_cluster,
+                "num_cluster_pred": n_clusters_pred,
+                "num_cluster_true": n_clusters_gt,
+                "time_clustering": end_cluster - start_cluster,
             }
         )
 
