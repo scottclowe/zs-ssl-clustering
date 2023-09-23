@@ -203,6 +203,7 @@ def run_one_worker(gpu, ngpus_per_node, config):
     transform_eval = data_transformations.get_transform(
         config.zoom_ratio,
         image_size=config.image_size,
+        image_channels=img_channels,
     )
 
     # Dataset -----------------------------------------------------------------

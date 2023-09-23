@@ -10,7 +10,7 @@ NORMALIZATION = {
 VALID_TRANSFORMS = ["imagenet", "cifar", "mnist"]
 
 
-def get_transform(zoom_ratio=1.0, image_size=224, args=None):
+def get_transform(zoom_ratio=1.0, image_size=224, image_channels=3, args=None):
     if args is None:
         args = {}
     mean, std = NORMALIZATION[args.get("normalization", "imagenet")]
@@ -25,5 +25,8 @@ def get_transform(zoom_ratio=1.0, image_size=224, args=None):
         transforms.ToTensor(),
         transforms.Normalize(mean=torch.tensor(mean), std=torch.tensor(std)),
     ]
+    if image_channels == 1:
+        # Convert greyscale image to have 3 channels
+        steps.insert(-1, transforms.Lambda(lambda x: x.repeat(3, 1, 1)))
     transform = transforms.Compose(steps)
     return transform
