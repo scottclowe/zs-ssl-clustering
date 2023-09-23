@@ -5,6 +5,7 @@
 checkpoints/
 checkpoints_finished
 checkpoints_working/
+embeddings*/
 models/
 slogs/
 slogs-inner/

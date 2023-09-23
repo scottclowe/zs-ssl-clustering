@@ -203,8 +203,8 @@ def run_one_worker(gpu, ngpus_per_node, config):
 
     # DATASET =================================================================
     # Transforms --------------------------------------------------------------
-    transform_train, transform_eval = data_transformations.get_transform(
-        config.transform_type,
+    transform_eval = data_transformations.get_transform(
+        config.zoom_ratio,
         image_size=config.image_size,
     )
 
@@ -282,13 +282,11 @@ def run_one_worker(gpu, ngpus_per_node, config):
         t1 = time.time()
         tmp_a, tmp_b = os.path.split(fname)
         tmp_fname = os.path.join(tmp_a, ".tmp." + tmp_b)
-        torch.save(
-            {
-                "config": config,
-                "embeddings": embeddings,
-                "y_true": y_true,
-            },
+        np.savez_compressed(
             tmp_fname,
+            config=config,
+            embeddings=embeddings,
+            y_true=y_true,
         )
         os.rename(tmp_fname, fname)
         print(f"Saved embeddings in {time.time() - t1:.2f}s")
@@ -298,11 +296,11 @@ def get_output_path(config):
     """
     Generate path to embeddings file.
     """
-    fname = config.dataset_name + "__" + config.model + ".pt"
+    fname = config.dataset_name + "__" + config.model + ".npz"
     fname = utils.sanitize_filename(fname)
     fname = os.path.join(
         config.output_dir,
-        utils.sanitize_filename(config.partition),
+        utils.sanitize_filename(config.partition + f"__z{config.zoom_ratio}"),
         fname,
     )
     return fname
@@ -418,10 +416,10 @@ def get_parser():
         help="Attempt to download the dataset if it is not found locally.",
     )
     group.add_argument(
-        "--transform-type",
-        type=str,
-        default="cifar",
-        help="Name of augmentation stack to apply to training data. Default: %(default)s",
+        "--zoom-ratio",
+        type=float,
+        default=1.0,
+        help="Ratio of how much of the image to zoom in on. Default: %(default)s",
     )
     group.add_argument(
         "--image-size",
@@ -452,12 +450,22 @@ def get_parser():
     group.add_argument(
         "--seed",
         type=int,
-        help="Random number generator (RNG) seed. Default: not controlled",
+        default=0,
+        help="Random number generator (RNG) seed. Default: %(default)s",
     )
-    group.add_argument(
+    mx_group = group.add_mutually_exclusive_group()
+    mx_group.add_argument(
         "--deterministic",
+        dest="deterministic",
         action="store_true",
-        help="Disable non-deterministic features of cuDNN.",
+        default=True,
+        help="Only use deterministic cuDNN features (disabled by default).",
+    )
+    mx_group.add_argument(
+        "--non-deterministic",
+        dest="deterministic",
+        action="store_false",
+        help="Enable non-deterministic features of cuDNN.",
     )
     # Hardware configuration args ---------------------------------------------
     group = parser.add_argument_group("Hardware configuration")
