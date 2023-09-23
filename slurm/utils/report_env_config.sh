@@ -32,10 +32,6 @@ echo ""
 echo "nvidia-smi:"
 nvidia-smi || echo "No nvidia-smi"
 echo ""
-echo "torch info:"
-python -c "import torch; print(f'pytorch={torch.__version__}, cuda={torch.cuda.is_available()}, gpus={torch.cuda.device_count()}')"
-python -c "import torch; print(str(torch.ones(1, device=torch.device('cuda')))); print('able to use cuda')"
-echo ""
 if [[ "$start_time" != "" ]];
 then
     echo "------------------------------------"
