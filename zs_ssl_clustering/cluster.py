@@ -201,7 +201,7 @@ def run(config):
         )
 
     print(
-        f"\n{config.clusterer_name}({config.model_name}({config.dataset}))"
+        f"\n{config.clusterer_name}({config.model}({config.dataset_name}))"
         " evaluation results:"
     )
     for k, v in results.items():
