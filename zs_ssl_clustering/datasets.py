@@ -291,7 +291,7 @@ def fetch_dataset(
     prototyping=False,
     transform_train=None,
     transform_eval=None,
-    protoval_split_rate=0.1,
+    protoval_split_rate="auto",
     protoval_split_id=0,
     download=False,
 ):
@@ -318,7 +318,7 @@ def fetch_dataset(
     transform_eval : callable, optional
         A function/transform that takes in an PIL image and returns a
         transformed version, to be applied to the evaluation dataset.
-    protoval_split_rate : float or str, default=0.1
+    protoval_split_rate : float or str, default="auto"
         The fraction of the train data to use for validating when in
         prototyping mode. If this is set to "auto", the split rate will be
         chosen such that the validation partition is the same size as the test
