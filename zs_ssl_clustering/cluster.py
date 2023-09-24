@@ -22,6 +22,11 @@ CLUSTERERS = [
 
 
 def run(config):
+    print("Configuration:")
+    print()
+    print(config)
+    print()
+
     if config.log_wandb:
         # Lazy import of wandb, since logging to wandb is optional
         import wandb
