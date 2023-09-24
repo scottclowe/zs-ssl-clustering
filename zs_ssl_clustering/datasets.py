@@ -13,6 +13,7 @@ import torchvision.datasets
 
 from zs_ssl_clustering.dataloaders.nabirds import NABirds
 
+
 def determine_host():
     r"""
     Determine which compute server we are on.
@@ -90,12 +91,12 @@ def image_dataset_sizes(dataset):
         num_classes = 10
         img_size = 28
         num_channels = 1
-        
+
     elif dataset == "fashionmnist":
         num_classes = 10
         img_size = 28
         num_channels = 1
-        
+
     elif dataset == "kmnist":
         num_classes = 10
         img_size = 28
@@ -110,7 +111,7 @@ def image_dataset_sizes(dataset):
         num_classes = 555
         img_size = None
         num_channels = 3
-        
+
     elif dataset in ["oxfordflowers102", "flowers102"]:
         num_classes = 102
         img_size = None
@@ -121,12 +122,12 @@ def image_dataset_sizes(dataset):
         img_size = None
         num_channels = 3
 
-    elif dataset ==  ["inaturalist", "inaturalist-mini"]:
+    elif dataset == ["inaturalist", "inaturalist-mini"]:
         num_classes = 10000
         img_size = None
         num_channels = 3
 
-    elif dataset ==  "aircraft":
+    elif dataset == "aircraft":
         num_classes = 100
         img_size = None
         num_channels = 3
@@ -284,7 +285,6 @@ def fetch_image_dataset(
             transform=transform_eval,
             download=download,
         )
-        
 
     elif dataset == "fashionmnist":
         if root:
@@ -307,7 +307,7 @@ def fetch_image_dataset(
             transform=transform_eval,
             download=download,
         )
-        
+
     elif dataset == "kmnist":
         if root:
             pass
@@ -369,16 +369,19 @@ def fetch_image_dataset(
             root = "/scratch/gobi1/datasets/"
         else:
             root = "~/Datasets"
-        dataset_train = NABirds(os.path.join(root, "nabirds"),
-                                 train=True,
-                                 transform=transform_train,
-                                 download=False)
+        dataset_train = NABirds(
+            os.path.join(root, "nabirds"),
+            train=True,
+            transform=transform_train,
+            download=False,
+        )
         dataset_val = None
-        dataset_test = NABirds(os.path.join(root, "nabirds"),
-                                 train=False,
-                                 transform=transform_eval,
-                                 download=False)
-        
+        dataset_test = NABirds(
+            os.path.join(root, "nabirds"),
+            train=False,
+            transform=transform_eval,
+            download=False,
+        )
 
     elif dataset in ["oxfordflowers102", "flowers102"]:
         if not root:
@@ -419,34 +422,42 @@ def fetch_image_dataset(
         # TODO Add older iNat versions?
         if not root:
             root = "~/Datasets"
-        dataset_train = torchvision.datasets.INaturalist(os.path.join(root, dataset),
-                                                         version="2021_train",
-                                                         target_type="full",
-                                                         transform=transform_train,
-                                                         download=download)
+        dataset_train = torchvision.datasets.INaturalist(
+            os.path.join(root, dataset),
+            version="2021_train",
+            target_type="full",
+            transform=transform_train,
+            download=download,
+        )
         dataset_val = None
-        dataset_test = torchvision.datasets.INaturalist(os.path.join(root, dataset),
-                                                         version="2021_valid",
-                                                         target_type="full",
-                                                         transform=transform_eval,
-                                                         download=download)
-        
+        dataset_test = torchvision.datasets.INaturalist(
+            os.path.join(root, dataset),
+            version="2021_valid",
+            target_type="full",
+            transform=transform_eval,
+            download=download,
+        )
+
     elif dataset == "inaturalist-mini":
         # Defaults to iNaturalist 2021 mini train split
         # TODO Add older iNat versions?
         if not root:
             root = "~/Datasets"
-        dataset_train = torchvision.datasets.INaturalist(os.path.join(root, dataset),
-                                                         version="2021_mini",
-                                                         target_type="full",
-                                                         transform=transform_train,
-                                                         download=download)
+        dataset_train = torchvision.datasets.INaturalist(
+            os.path.join(root, dataset),
+            version="2021_mini",
+            target_type="full",
+            transform=transform_train,
+            download=download,
+        )
         dataset_val = None
-        dataset_test = torchvision.datasets.INaturalist(os.path.join(root, dataset),
-                                                         version="2021_valid",
-                                                         target_type="full",
-                                                         transform=transform_eval,
-                                                         download=download)
+        dataset_test = torchvision.datasets.INaturalist(
+            os.path.join(root, dataset),
+            version="2021_valid",
+            target_type="full",
+            transform=transform_eval,
+            download=download,
+        )
 
     elif dataset in "aircraft":
         if not root:
