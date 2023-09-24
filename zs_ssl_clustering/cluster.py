@@ -132,9 +132,10 @@ def run(config):
     reduced_dim = embeddings.shape[-1]
 
     clusterer_args = {
+        "distance_metric",
         "max_iter",
         "min_samples",
-        "distance_metric",
+        "workers",
         "aggclust_linkage",
         "aggclust_dist_thresh",
         "affinity_damping",
@@ -206,11 +207,13 @@ def run(config):
         clusterer = sklearn.cluster.HDBSCAN(
             min_cluster_size=config.min_samples,
             metric=config.distance_metric,
+            n_jobs=config.workers,
         )
         clusterer_args_used = clusterer_args_used.union(
             {
                 "min_samples",
                 "distance_metric",
+                "workers",
             }
         )
 
@@ -220,12 +223,14 @@ def run(config):
             metric=config.distance_metric,
             cluster_method=config.optics_method,
             xi=config.optics_xi,
+            n_jobs=config.workers,
         )
         clusterer_args_used = clusterer_args_used.union(
             {
                 "min_samples",
                 "distance_metric",
                 "optics_method",
+                "workers",
             }
         )
         if config.optics_method == "xi":
@@ -243,6 +248,8 @@ def run(config):
         setattr(config, key, None)
         if config.log_wandb:
             wandb.config.update({key: None}, allow_val_change=True)
+    if config.log_wandb and config.workers is not None and config.workers == -1:
+        wandb.config.update({"workers": os.sched_getaffinity(0)}, allow_val_change=True)
 
     start_cluster = time.time()
     clusterer.fit(embeddings)
@@ -505,6 +512,15 @@ def get_parser():
             "OPTICS minimum steepness, xi. Only applies when using the"
             " xi cluster method for OPTICS. Default: %(default)s"
         ),
+    )
+
+    # Hardware configuration args ---------------------------------------------
+    group = parser.add_argument_group("Hardware configuration")
+    group.add_argument(
+        "--workers",
+        type=int,
+        default=-1,
+        help="Number of CPU workers to use. Default: number of CPU cores available.",
     )
 
     # Logging args ------------------------------------------------------------
