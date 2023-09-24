@@ -69,6 +69,8 @@ def run(config):
     n_clusters_gt = len(np.unique(y_true))
     encoding_dim = embeddings.shape[-1]
 
+    clusterer_args_used = set()
+
     start_reducing = time.time()
     if config.dim_reducer == "None":
         pass
@@ -104,8 +106,12 @@ def run(config):
         start_pca = time.time()
         if use_kernel_PCA:
             pca = KernelPCA(
-                n_components=n_components, kernel="linear", random_state=config.seed
+                n_components=n_components,
+                kernel="linear",
+                random_state=config.seed,
+                n_jobs=config.workers,
             )
+            clusterer_args_used.add("workers")
         else:
             pca = PCA(n_components=n_components, random_state=config.seed)
         embeddings = pca.fit_transform(embeddings)
@@ -143,7 +149,6 @@ def run(config):
         "optics_method",
         "optics_xi",
     }
-    clusterer_args_used = set()
 
     if config.clusterer_name == "KMeans":
         clusterer = sklearn.cluster.KMeans(
