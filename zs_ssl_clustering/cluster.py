@@ -168,24 +168,20 @@ def run(config):
     end_cluster = time.time()
 
     y_pred = clusterer.labels_
+    n_clusters_pred = len(np.unique(y_pred))
     results = {
         "time_clustering": end_cluster - start_cluster,
         "num_cluster_true": n_clusters_gt,
-        "num_cluster_pred": len(np.unique(y_pred)),
+        "num_cluster_pred": n_clusters_pred,
         "AMI": sklearn.metrics.adjusted_mutual_info_score(y_true, y_pred),
         "ARI": sklearn.metrics.adjusted_rand_score(y_true, y_pred),
         "FMS": sklearn.metrics.fowlkes_mallows_score(y_true, y_pred),
         "completeness": sklearn.metrics.completeness_score(y_true, y_pred),
         "homogeneity": sklearn.metrics.homogeneity_score(y_true, y_pred),
         "CHS_true": sklearn.metrics.calinski_harabasz_score(embeddings, y_true),
-        "CHS_pred": sklearn.metrics.calinski_harabasz_score(embeddings, y_pred),
         "DBS_true": sklearn.metrics.davies_bouldin_score(embeddings, y_true),
-        "DBS_pred": sklearn.metrics.davies_bouldin_score(embeddings, y_pred),
         "silhouette_true": sklearn.metrics.silhouette_score(
             embeddings, y_true, metric="euclidean"
-        ),
-        "silhouette_pred": sklearn.metrics.silhouette_score(
-            embeddings, y_pred, metric="euclidean"
         ),
     }
     if config.distance_metric != "euclidean":
@@ -194,11 +190,21 @@ def run(config):
                 embeddings, y_true, metric=config.distance_metric
             ),
         )
-        results[f"silhouette-{config.distance_metric}_pred"] = (
-            sklearn.metrics.silhouette_score(
-                embeddings, y_pred, metric=config.distance_metric
-            ),
+
+    if n_clusters_pred > 1 and n_clusters_pred < len(embeddings):
+        results["CHS_pred"] = sklearn.metrics.calinski_harabasz_score(
+            embeddings, y_pred
         )
+        results["DBS_pred"] = sklearn.metrics.davies_bouldin_score(embeddings, y_pred)
+        results["silhouette_pred"] = sklearn.metrics.silhouette_score(
+            embeddings, y_pred, metric="euclidean"
+        )
+        if config.distance_metric != "euclidean":
+            results[f"silhouette-{config.distance_metric}_pred"] = (
+                sklearn.metrics.silhouette_score(
+                    embeddings, y_pred, metric=config.distance_metric
+                ),
+            )
 
     print(
         f"\n{config.clusterer_name}({config.model}({config.dataset_name}))"
