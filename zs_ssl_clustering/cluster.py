@@ -167,6 +167,8 @@ def run(config):
         if key == "distance_metric":
             continue
         setattr(config, key, None)
+        if config.log_wandb:
+            wandb.config.update({key: None}, allow_val_change=True)
 
     start_cluster = time.time()
     clusterer.fit(embeddings)
