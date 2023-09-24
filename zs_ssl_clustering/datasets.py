@@ -491,7 +491,7 @@ def fetch_dataset(
     transform_train=None,
     transform_eval=None,
     protoval_split_rate="auto",
-    protoval_split_id=0,
+    protoval_split_seed=0,
     download=False,
 ):
     r"""
@@ -522,12 +522,8 @@ def fetch_dataset(
         prototyping mode. If this is set to "auto", the split rate will be
         chosen such that the validation partition is the same size as the test
         partition.
-    protoval_split_id : int, default=0
-        The identity of the random split used for the train/val partitioning.
-        This controls the seed of the folds used for the split, and which
-        fold to use for the validation set.
-        The seed is equal to ``int(protoval_split_id * protoval_split_rate)``
-        and the fold is equal to ``protoval_split_id % (1 / protoval_split_rate)``.
+    protoval_split_seed : int, default=0
+        The seed to use for the split.
     download : bool, optional
         Whether to download the dataset to the expected directory if it is not
         there. Only supported by some datasets. Default is ``False``.
@@ -589,7 +585,7 @@ def fetch_dataset(
             dataset_train,
             dataset_val,
             split_rate=protoval_split_rate,
-            split_id=protoval_split_id,
+            split_seed=protoval_split_seed,
         )
         distinct_val_test = True
 
@@ -605,7 +601,7 @@ def create_train_val_split(
     dataset_train,
     dataset_val=None,
     split_rate=0.1,
-    split_id=0,
+    split_seed=0,
 ):
     r"""
     Create a train/val split of a dataset.
@@ -622,12 +618,8 @@ def create_train_val_split(
         ``dataset_train``, and the samples must be in the same order.
     split_rate : float, default=0.1
         The fraction of the train data to use for the validation split.
-    split_id : int, default=0
-        The identity of the split to use.
-        This controls the seed of the folds used for the split, and which
-        fold to use for the validation set.
-        The seed is equal to ``int(split_id * split_rate)``
-        and the fold is equal to ``split_id % (1 / split_rate)``.
+    split_seed : int, default=0
+        The seed to use for the split.
 
     Returns
     -------
@@ -638,25 +630,9 @@ def create_train_val_split(
     """
     if dataset_val is None:
         dataset_val = dataset_train
-    # Now we need to reduce it down to just a subset of the training set.
-    # Let's use K-folds so subsequent prototype split IDs will have
-    # non-overlapping validation sets. With split_rate = 0.1,
-    # there will be 10 folds.
-    n_splits = round(1.0 / split_rate)
-    if (1.0 / n_splits) != split_rate:
-        warnings.warn(
-            "The requested train/val split rate is not possible when using"
-            " dataset into K folds. The actual split rate will be"
-            f" {1.0 / n_splits} instead of {split_rate}.",
-            UserWarning,
-            stacklevel=2,
-        )
-    split_seed = int(split_id * split_rate)
-    fold_id = split_id % n_splits
     print(
-        f"Creating prototyping train/val split #{split_id}."
-        f" Using fold {fold_id} of {n_splits} folds, generated with seed"
-        f" {split_seed}."
+        f"Creating prototyping train/val: {(1-split_rate)*100:.1f}/{split_rate*100:.1f}"
+        f" with split seed={split_seed}."
     )
     # Try to do a stratified split.
     classes = get_dataset_labels(dataset_train)
@@ -666,20 +642,15 @@ def create_train_val_split(
             UserWarning,
             stacklevel=2,
         )
-        splitter_ftry = sklearn.model_selection.KFold
-    else:
-        splitter_ftry = sklearn.model_selection.StratifiedKFold
-
+    # Split the training set into train/val by sample index.
+    train_indices, val_indices = sklearn.model_selection.train_test_split(
+        np.arange(len(dataset_train)),
+        test_size=split_rate,
+        random_state=split_seed,
+        stratify=classes,
+    )
     # Create our splits. Assuming the dataset objects are always loaded
-    # the same way, since a given split ID will always be the same
-    # fold from the same seeded KFold splitter, it will yield the same
-    # train/val split on each run.
-    splitter = splitter_ftry(n_splits=n_splits, shuffle=True, random_state=split_seed)
-    splits = splitter.split(np.arange(len(dataset_train)), classes)
-    # splits is an iterable and we want to take the n-th fold from it.
-    for i, (train_indices, val_indices) in enumerate(splits):  # noqa: B007
-        if i == fold_id:
-            break
+    # the same way, it will yield the same train/val split on each run.
     dataset_train = torch.utils.data.Subset(dataset_train, train_indices)
     dataset_val = torch.utils.data.Subset(dataset_val, val_indices)
     return dataset_train, dataset_val
