@@ -176,10 +176,15 @@ def run(config):
 
     y_pred = clusterer.labels_
     n_clusters_pred = len(np.unique(y_pred))
+
+    ratio_clustered = np.sum(y_pred >= 0) / len(y_pred)
+    ratio_unclustered = 1 - ratio_clustered
     results = {
         "time_clustering": end_cluster - start_cluster,
         "num_cluster_true": n_clusters_gt,
         "num_cluster_pred": n_clusters_pred,
+        "ratio_clustered": ratio_clustered,
+        "ratio_unclustered": ratio_unclustered,
         "AMI": sklearn.metrics.adjusted_mutual_info_score(y_true, y_pred),
         "ARI": sklearn.metrics.adjusted_rand_score(y_true, y_pred),
         "FMS": sklearn.metrics.fowlkes_mallows_score(y_true, y_pred),
