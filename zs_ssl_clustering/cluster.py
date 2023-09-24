@@ -254,7 +254,9 @@ def run(config):
         if config.log_wandb:
             wandb.config.update({key: None}, allow_val_change=True)
     if config.log_wandb and config.workers is not None and config.workers == -1:
-        wandb.config.update({"workers": os.sched_getaffinity(0)}, allow_val_change=True)
+        wandb.config.update(
+            {"workers": len(os.sched_getaffinity(0))}, allow_val_change=True
+        )
 
     start_cluster = time.time()
     clusterer.fit(embeddings)
