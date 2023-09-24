@@ -232,6 +232,12 @@ def run_one_worker(gpu, ngpus_per_node, config):
         dataset = dataset_test
     elif config.partition == "train+test":
         dataset = torch.utils.data.ConcatDataset([dataset_train, dataset_test])
+    elif config.partition == "all":
+        if distinct_val_test:
+            datalist = [dataset_train, dataset_val, dataset_test]
+        else:
+            datalist = [dataset_train, dataset_test]
+        dataset = torch.utils.data.ConcatDataset(datalist)
     else:
         raise ValueError(f"Unrecognized partition name: {config.partition}")
 
