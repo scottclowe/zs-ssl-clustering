@@ -9,7 +9,7 @@ import sklearn.cluster
 import sklearn.metrics
 from sklearn.decomposition import PCA, KernelPCA
 
-from zs_ssl_clustering import io
+from zs_ssl_clustering import io, utils
 
 CLUSTERERS = [
     "KMeans",
@@ -255,7 +255,7 @@ def run(config):
             wandb.config.update({key: None}, allow_val_change=True)
     if config.log_wandb and config.workers is not None and config.workers == -1:
         wandb.config.update(
-            {"workers": len(os.sched_getaffinity(0))}, allow_val_change=True
+            {"workers": utils.get_num_cpu_available()}, allow_val_change=True
         )
 
     start_cluster = time.time()

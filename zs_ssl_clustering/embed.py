@@ -76,11 +76,7 @@ def run_one_worker(gpu, ngpus_per_node, config):
 
         builtins.print = print_pass
 
-    try:
-        n_cpus = len(os.sched_getaffinity(0))
-    except BaseException:
-        n_cpus = "UNK"
-
+    n_cpus = utils.get_num_cpu_available()
     print()
     print("Configuration:")
     print()
@@ -171,10 +167,7 @@ def run_one_worker(gpu, ngpus_per_node, config):
     print()
 
     if config.workers is None:
-        if n_cpus != "UNK":
-            config.workers = n_cpus
-        else:
-            raise ValueError("Could not read the number of available CPUs")
+        config.workers = n_cpus
 
     if not torch.cuda.is_available():
         print("Using CPU (this will be slow)")
