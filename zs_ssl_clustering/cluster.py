@@ -116,16 +116,18 @@ def run(config):
         "distance_metric",
         "aggclust_linkage",
         "aggclust_dist_thresh",
+        "max_iter",
     }
     clusterer_args_used = set()
     if config.clusterer_name == "KMeans":
         clusterer = KMeans(
             n_clusters=n_clusters_gt,
             random_state=config.seed,
-            max_iter=1_000,
+            max_iter=config.max_iter,
             init="k-means++",
             n_init=1,
         )
+        clusterer_args_used = clusterer_args_used.union({"seed", "max_iter"})
     elif config.clusterer_name == "SpectralClustering":
         # TODO Look into this:
         # Requires the number of clusters
@@ -135,6 +137,7 @@ def run(config):
         clusterer = SpectralClustering(
             n_clusters=n_clusters_gt, random_state=config.seed
         )
+        clusterer_args_used = clusterer_args_used.union({"seed"})
     elif config.clusterer_name == "AgglomerativeClustering":
         # Can work with specified number of clusters, as well as unknown (which requires a distance threshold)
         # We can also impose some structure metric through the "connectivity" argument
@@ -217,6 +220,10 @@ def run(config):
                     embeddings, y_pred, metric=config.distance_metric
                 ),
             )
+
+    if hasattr(clusterer, "n_iter_"):
+        results["iter"] = clusterer.n_iter_  # Number of iterations run.
+        results["converged"] = clusterer.n_iter_ < config.max_iter
 
     print(
         f"\n{config.clusterer_name}({config.model}({config.dataset_name}))"
@@ -377,6 +384,12 @@ def get_parser():
         type=float,
         default=1,
         help="Distance threshold for agglomerative clustering method",
+    )
+    group.add_argument(
+        "--max-iter",
+        type=int,
+        default=1_000,
+        help="Maximum number of iterations for iterative clusterers. Default: %(default)s",
     )
 
     # TODO Add more arguments for clustering
