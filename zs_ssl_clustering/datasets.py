@@ -11,6 +11,7 @@ import sklearn.model_selection
 import torch
 import torchvision.datasets
 
+from zs_ssl_clustering.dataloaders.nabirds import NABirds
 
 def determine_host():
     r"""
@@ -89,10 +90,45 @@ def image_dataset_sizes(dataset):
         num_classes = 10
         img_size = 28
         num_channels = 1
+        
+    elif dataset == "fashionmnist":
+        num_classes = 10
+        img_size = 28
+        num_channels = 1
+        
+    elif dataset == "kmnist":
+        num_classes = 10
+        img_size = 28
+        num_channels = 1
 
     elif dataset == "svhn":
         num_classes = 10
         img_size = 32
+        num_channels = 3
+
+    elif dataset == "nabirds":
+        num_classes = 555
+        img_size = None
+        num_channels = 3
+        
+    elif dataset in ["oxfordflowers102", "flowers102"]:
+        num_classes = 102
+        img_size = None
+        num_channels = 3
+
+    elif dataset == "stanfordcars":
+        num_classes = 196
+        img_size = None
+        num_channels = 3
+
+    elif dataset ==  ["inaturalist", "inaturalist-mini"]:
+        num_classes = 10000
+        img_size = None
+        num_channels = 3
+
+    elif dataset ==  "aircraft":
+        num_classes = 100
+        img_size = None
         num_channels = 3
 
     else:
@@ -248,6 +284,51 @@ def fetch_image_dataset(
             transform=transform_eval,
             download=download,
         )
+        
+
+    elif dataset == "fashionmnist":
+        if root:
+            pass
+        elif host == "vaughan":
+            root = "/scratch/ssd004/datasets/"
+        else:
+            root = "~/Datasets"
+        # Will read from [root]/FashionMNIST/processed
+        dataset_train = torchvision.datasets.FashionMNIST(
+            root,
+            train=True,
+            transform=transform_train,
+            download=download,
+        )
+        dataset_val = None
+        dataset_test = torchvision.datasets.FashionMNIST(
+            root,
+            train=False,
+            transform=transform_eval,
+            download=download,
+        )
+        
+    elif dataset == "kmnist":
+        if root:
+            pass
+        elif host == "vaughan":
+            root = "/scratch/ssd004/datasets/"
+        else:
+            root = "~/Datasets"
+        # Will read from [root]/KMNIST/processed
+        dataset_train = torchvision.datasets.KMNIST(
+            root,
+            train=True,
+            transform=transform_train,
+            download=download,
+        )
+        dataset_val = None
+        dataset_test = torchvision.datasets.KMNIST(
+            root,
+            train=False,
+            transform=transform_eval,
+            download=download,
+        )
 
     elif dataset == "svhn":
         # SVHN has:
@@ -279,6 +360,111 @@ def fetch_image_dataset(
             download=download,
         )
 
+    elif dataset == "nabirds":
+        if root:
+            pass
+        elif host == "vaughan":
+            root = "/scratch/ssd004/datasets/"
+        elif host == "mars":
+            root = "/scratch/gobi1/datasets/"
+        else:
+            root = "~/Datasets"
+        dataset_train = NABirds(os.path.join(root, "nabirds"),
+                                 train=True,
+                                 transform=transform_train,
+                                 download=False)
+        dataset_val = None
+        dataset_test = NABirds(os.path.join(root, "nabirds"),
+                                 train=False,
+                                 transform=transform_eval,
+                                 download=False)
+        
+
+    elif dataset in ["oxfordflowers102", "flowers102"]:
+        if not root:
+            root = "~/Datasets"
+        # Will read from [root]/flowers-102
+        dataset_train = torchvision.datasets.Flowers102(
+            root,
+            split="train",
+            transform=transform_train,
+            download=download,
+        )
+        dataset_val = None
+        dataset_test = torchvision.datasets.Flowers102(
+            root,
+            split="test",
+            transform=transform_eval,
+            download=download,
+        )
+
+    elif dataset == "stanfordcars":
+        # Noticed on 2023-05-16 that the official source
+        # https://ai.stanford.edu/~jkrause/cars/car_dataset.html
+        # is not available
+        if not root:
+            root = "~/Datasets"
+        dataset_train = torchvision.datasets.ImageFolder(
+            os.path.join(root, dataset, "train"),
+            transform=transform_train,
+        )
+        dataset_val = None
+        dataset_test = torchvision.datasets.ImageFolder(
+            os.path.join(root, dataset, "test"),
+            transform=transform_eval,
+        )
+
+    elif dataset == "inaturalist":
+        # Defaults to iNaturalist 2021 full train split
+        # TODO Add older iNat versions?
+        if not root:
+            root = "~/Datasets"
+        dataset_train = torchvision.datasets.INaturalist(os.path.join(root, dataset),
+                                                         version="2021_train",
+                                                         target_type="full",
+                                                         transform=transform_train,
+                                                         download=download)
+        dataset_val = None
+        dataset_test = torchvision.datasets.INaturalist(os.path.join(root, dataset),
+                                                         version="2021_valid",
+                                                         target_type="full",
+                                                         transform=transform_eval,
+                                                         download=download)
+        
+    elif dataset == "inaturalist-mini":
+        # Defaults to iNaturalist 2021 mini train split
+        # TODO Add older iNat versions?
+        if not root:
+            root = "~/Datasets"
+        dataset_train = torchvision.datasets.INaturalist(os.path.join(root, dataset),
+                                                         version="2021_mini",
+                                                         target_type="full",
+                                                         transform=transform_train,
+                                                         download=download)
+        dataset_val = None
+        dataset_test = torchvision.datasets.INaturalist(os.path.join(root, dataset),
+                                                         version="2021_valid",
+                                                         target_type="full",
+                                                         transform=transform_eval,
+                                                         download=download)
+
+    elif dataset in "aircraft":
+        if not root:
+            root = "~/Datasets"
+        # Will read from [root]/aircraft
+        dataset_train = torchvision.datasets.FGVCAircraft(
+            root,
+            split="train",
+            transform=transform_train,
+            download=download,
+        )
+        dataset_val = None
+        dataset_test = torchvision.datasets.FGVCAircraft(
+            root,
+            split="test",
+            transform=transform_eval,
+            download=download,
+        )
     else:
         raise ValueError("Unrecognised dataset: {}".format(dataset))
 
