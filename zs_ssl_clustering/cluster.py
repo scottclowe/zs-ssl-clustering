@@ -106,14 +106,13 @@ def run(config):
     if config.normalize:
         embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
 
-    clusterer_name = config.clusterer_name
     clusterer_args = {
         "distance_metric",
         "aggclust_linkage",
         "aggclust_dist_thresh",
     }
     clusterer_args_used = set()
-    if clusterer_name == "AgglomerativeClustering":
+    if config.clusterer_name == "AgglomerativeClustering":
         # Can work with specified number of clusters, as well as unknown (which requires a distance threshold)
         # We can also impose some structure metric through the "connectivity" argument
         clusterer = AgglomerativeClustering(
@@ -129,13 +128,13 @@ def run(config):
                 "aggclust_dist_thresh",
             }
         )
-    elif clusterer_name == "HDBSCAN":
+    elif config.clusterer_name == "HDBSCAN":
         clusterer = HDBSCAN(
             min_cluster_size=2,
             metric=config.distance_metric,
         )
         clusterer_args_used.add("distance_metric")
-    elif clusterer_name == "KMeans":
+    elif config.clusterer_name == "KMeans":
         clusterer = KMeans(
             n_clusters=n_clusters_gt,
             random_state=config.seed,
@@ -143,7 +142,7 @@ def run(config):
             init="k-means++",
             n_init=1,
         )
-    elif clusterer_name == "SpectralClustering":
+    elif config.clusterer_name == "SpectralClustering":
         # TODO Look into this:
         # Requires the number of clusters
         # Can be estimated through e.g.
