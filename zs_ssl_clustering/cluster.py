@@ -64,6 +64,7 @@ def run(config):
     n_clusters_gt = len(np.unique(y_true))
     encoding_dim = embeddings.shape[-1]
 
+    start_reducing = time.time()
     if config.dim_reducer == "None":
         pass
     elif "PCA" in config.dim_reducer:
@@ -117,6 +118,7 @@ def run(config):
         raise ValueError(
             f"Unrecognized dimensionality reduction method: '{config.dim_reducer}'"
         )
+    end_reducing = time.time()
 
     # TODO: Maybe do before PCA?
     if config.normalize:
@@ -249,6 +251,7 @@ def run(config):
     results = {
         "encoding_dim": encoding_dim,
         "reduced_dim": reduced_dim,
+        "time_reducing": end_reducing - start_reducing,
         "time_clustering": end_cluster - start_cluster,
         "num_cluster_true": n_clusters_gt,
         "num_cluster_pred": n_clusters_pred,
