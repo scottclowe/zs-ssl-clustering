@@ -126,6 +126,7 @@ def run(config):
             max_iter=config.max_iter,
             init="k-means++",
             n_init=1,
+            verbose=config.verbose,
         )
         clusterer_args_used = clusterer_args_used.union({"seed", "max_iter"})
     elif config.clusterer_name == "SpectralClustering":
@@ -135,7 +136,9 @@ def run(config):
         # https://proceedings.neurips.cc/paper_files/paper/2004/file/40173ea48d9567f1f393b20c855bb40b-Paper.pdf
         # Might be more recent work to consider
         clusterer = SpectralClustering(
-            n_clusters=n_clusters_gt, random_state=config.seed
+            n_clusters=n_clusters_gt,
+            random_state=config.seed,
+            verbose=config.verbose > 0,
         )
         clusterer_args_used = clusterer_args_used.union({"seed"})
     elif config.clusterer_name == "AgglomerativeClustering":
@@ -443,6 +446,22 @@ def get_parser():
         type=str,
         help="Unique identifier for the model run or job. Used as the run ID on wandb.",
     )
+    # Verbosity args ----------------------------------------------------------
+    group = parser.add_argument_group("Verbosity")
+    group.add_argument(
+        "--verbose",
+        "-v",
+        action="count",
+        default=1,
+        help="Increase the level of verbosity. The default verbosity level is %(default)s.",
+    )
+    group.add_argument(
+        "--quiet",
+        "-q",
+        action="count",
+        default=0,
+        help="Decrease the level of verbosity.",
+    )
 
     return parser
 
@@ -458,6 +477,8 @@ def cli():
     # Handle unspecified wandb_tags: if None, set to empty list
     if config.wandb_tags is None:
         config.wandb_tags = []
+    config.verbose -= config.quiet
+    del config.quiet
     return run(config)
 
 
