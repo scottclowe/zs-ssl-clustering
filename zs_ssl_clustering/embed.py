@@ -212,6 +212,8 @@ def run_one_worker(gpu, ngpus_per_node, config):
         "root": config.data_dir,
         "download": config.allow_download_dataset,
     }
+    if config.partition == "val":
+        dataset_args["prototyping"] = True
     (
         dataset_train,
         dataset_val,
