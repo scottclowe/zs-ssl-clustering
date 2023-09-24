@@ -3,11 +3,20 @@ import time
 from datetime import datetime
 
 import numpy as np
+import sklearn.cluster
 import sklearn.metrics
-from sklearn.cluster import HDBSCAN, AgglomerativeClustering, KMeans, SpectralClustering
 from sklearn.decomposition import PCA, KernelPCA
 
 from zs_ssl_clustering import io
+
+CLUSTERERS = [
+    "KMeans",
+    "AffinityPropagation",
+    "AgglomerativeClustering",
+    "SpectralClustering",
+    "HDBSCAN",
+    "OPTICS",
+]
 
 
 def run(config):
@@ -114,14 +123,19 @@ def run(config):
 
     clusterer_args = {
         "max_iter",
+        "min_samples",
         "distance_metric",
         "aggclust_linkage",
         "aggclust_dist_thresh",
+        "affinity_damping",
+        "affinity_conv_iter",
+        "optics_method",
+        "optics_xi",
     }
     clusterer_args_used = set()
 
     if config.clusterer_name == "KMeans":
-        clusterer = KMeans(
+        clusterer = sklearn.cluster.KMeans(
             n_clusters=n_clusters_gt,
             random_state=config.seed,
             max_iter=config.max_iter,
@@ -131,13 +145,30 @@ def run(config):
         )
         clusterer_args_used = clusterer_args_used.union({"seed", "max_iter"})
 
+    elif config.clusterer_name == "AffinityPropagation":
+        clusterer = sklearn.cluster.AffinityPropagation(
+            damping=config.affinity_damping,
+            max_iter=config.max_iter,
+            convergence_iter=config.affinity_conv_iter,
+            verbose=config.verbose > 0,
+            random_state=config.seed,
+        )
+        clusterer_args_used = clusterer_args_used.union(
+            {
+                "seed",
+                "max_iter",
+                "affinity_damping",
+                "affinity_conv_iter",
+            }
+        )
+
     elif config.clusterer_name == "SpectralClustering":
         # TODO Look into this:
         # Requires the number of clusters
         # Can be estimated through e.g.
         # https://proceedings.neurips.cc/paper_files/paper/2004/file/40173ea48d9567f1f393b20c855bb40b-Paper.pdf
         # Might be more recent work to consider
-        clusterer = SpectralClustering(
+        clusterer = sklearn.cluster.SpectralClustering(
             n_clusters=n_clusters_gt,
             random_state=config.seed,
             verbose=config.verbose > 0,
@@ -147,7 +178,7 @@ def run(config):
     elif config.clusterer_name == "AgglomerativeClustering":
         # Can work with specified number of clusters, as well as unknown (which requires a distance threshold)
         # We can also impose some structure metric through the "connectivity" argument
-        clusterer = AgglomerativeClustering(
+        clusterer = sklearn.cluster.AgglomerativeClustering(
             n_clusters=None,
             metric=config.distance_metric,
             linkage=config.aggclust_linkage,
@@ -162,11 +193,33 @@ def run(config):
         )
 
     elif config.clusterer_name == "HDBSCAN":
-        clusterer = HDBSCAN(
-            min_cluster_size=2,
+        clusterer = sklearn.cluster.HDBSCAN(
+            min_cluster_size=config.min_samples,
             metric=config.distance_metric,
         )
-        clusterer_args_used.add("distance_metric")
+        clusterer_args_used = clusterer_args_used.union(
+            {
+                "min_samples",
+                "distance_metric",
+            }
+        )
+
+    elif config.clusterer_name == "OPTICS":
+        clusterer = sklearn.cluster.OPTICS(
+            min_samples=config.min_samples,
+            metric=config.distance_metric,
+            cluster_method=config.optics_method,
+            xi=config.optics_xi,
+        )
+        clusterer_args_used = clusterer_args_used.union(
+            {
+                "min_samples",
+                "distance_metric",
+                "optics_method",
+            }
+        )
+        if config.optics_method == "xi":
+            clusterer_args_used.add("optics_xi")
 
     else:
         raise ValueError(f"Unrecognized clusterer: '{config.clusterer_name}'")
@@ -369,9 +422,9 @@ def get_parser():
     group.add_argument(
         "--clusterer-name",
         type=str,
-        default="KMeans",
-        choices=["KMeans", "HDBSCAN", "AgglomerativeClustering", "SpectralClustering"],
-        help="Method to cluster embeddings with",
+        default="HDBSCAN",
+        choices=CLUSTERERS,
+        help="Name of clustering method. Default: %(default)s",
     )
     group.add_argument(
         "--distance-metric",
@@ -387,6 +440,30 @@ def get_parser():
         help="Maximum number of iterations for iterative clusterers. Default: %(default)s",
     )
     group.add_argument(
+        "--min-samples",
+        type=int,
+        default=2,
+        help="Minimum number of samples to comprise a cluster. Default: %(default)s",
+    )
+    group.add_argument(
+        "--affinity-damping",
+        type=float,
+        default=0.5,
+        help=(
+            "Affinity propagation's damping factor in the range [0.5, 1.0)."
+            " Default: %(default)s"
+        ),
+    )
+    group.add_argument(
+        "--affinity-conv-iter",
+        type=int,
+        default=15,
+        help=(
+            "Affinity propagation's stopping criteria, number of iterations with"
+            " no change in number of estimated clusters. Default: %(default)s"
+        ),
+    )
+    group.add_argument(
         "--aggclust-linkage",
         type=str,
         default="ward",
@@ -398,6 +475,22 @@ def get_parser():
         type=float,
         default=1,
         help="Distance threshold for agglomerative clustering method",
+    )
+    group.add_argument(
+        "--optics-method",
+        type=str,
+        default="xi",
+        choices=["xi", "dbscan"],
+        help="OPTICS cluster extraction method. Default: %(default)s",
+    )
+    group.add_argument(
+        "--optics-xi",
+        type=float,
+        default=0.05,
+        help=(
+            "OPTICS minimum steepness, xi. Only applies when using the"
+            " xi cluster method for OPTICS. Default: %(default)s"
+        ),
     )
 
     # Logging args ------------------------------------------------------------
