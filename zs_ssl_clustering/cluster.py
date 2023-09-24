@@ -118,7 +118,24 @@ def run(config):
         "aggclust_dist_thresh",
     }
     clusterer_args_used = set()
-    if config.clusterer_name == "AgglomerativeClustering":
+    if config.clusterer_name == "KMeans":
+        clusterer = KMeans(
+            n_clusters=n_clusters_gt,
+            random_state=config.seed,
+            max_iter=1_000,
+            init="k-means++",
+            n_init=1,
+        )
+    elif config.clusterer_name == "SpectralClustering":
+        # TODO Look into this:
+        # Requires the number of clusters
+        # Can be estimated through e.g.
+        # https://proceedings.neurips.cc/paper_files/paper/2004/file/40173ea48d9567f1f393b20c855bb40b-Paper.pdf
+        # Might be more recent work to consider
+        clusterer = SpectralClustering(
+            n_clusters=n_clusters_gt, random_state=config.seed
+        )
+    elif config.clusterer_name == "AgglomerativeClustering":
         # Can work with specified number of clusters, as well as unknown (which requires a distance threshold)
         # We can also impose some structure metric through the "connectivity" argument
         clusterer = AgglomerativeClustering(
@@ -140,23 +157,6 @@ def run(config):
             metric=config.distance_metric,
         )
         clusterer_args_used.add("distance_metric")
-    elif config.clusterer_name == "KMeans":
-        clusterer = KMeans(
-            n_clusters=n_clusters_gt,
-            random_state=config.seed,
-            max_iter=1_000,
-            init="k-means++",
-            n_init=1,
-        )
-    elif config.clusterer_name == "SpectralClustering":
-        # TODO Look into this:
-        # Requires the number of clusters
-        # Can be estimated through e.g.
-        # https://proceedings.neurips.cc/paper_files/paper/2004/file/40173ea48d9567f1f393b20c855bb40b-Paper.pdf
-        # Might be more recent work to consider
-        clusterer = SpectralClustering(
-            n_clusters=n_clusters_gt, random_state=config.seed
-        )
     else:
         raise ValueError(f"Unrecognized clusterer: '{config.clusterer_name}'")
 
