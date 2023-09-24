@@ -298,7 +298,7 @@ def run_one_worker(gpu, ngpus_per_node, config):
         print(f"Saved embeddings in {time.time() - t1:.2f}s")
 
 
-def embed_dataset(dataloader, encoder, device, is_distributed=False):
+def embed_dataset(dataloader, encoder, device, is_distributed=False, log_interval=20):
     r"""
     Embed a dataset using the given encoder.
 
@@ -312,6 +312,8 @@ def embed_dataset(dataloader, encoder, device, is_distributed=False):
         Device to run the model on.
     is_distributed : bool, default=False
         Whether the model is distributed across multiple GPUs.
+    log_interval : int, default=20
+        How often to print progress creating the embeddings.
 
     Returns
     -------
@@ -323,7 +325,9 @@ def embed_dataset(dataloader, encoder, device, is_distributed=False):
     encoder.eval()
     embeddings_list = []
     y_true_list = []
-    for stimuli, y_true in dataloader:
+    for i_batch, (stimuli, y_true) in enumerate(dataloader):
+        if i_batch % log_interval == 0:
+            print(f"Processing batch {i_batch + 1}/{len(dataloader)}")
         stimuli = stimuli.to(device)
         y_true = y_true.to(device)
         with torch.no_grad():
