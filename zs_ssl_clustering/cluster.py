@@ -52,21 +52,19 @@ def run(config):
     y_true = data["y_true"]
     n_clusters_gt = len(np.unique(y_true))
 
-    if config.pca_method != "None":
-        use_kernel_PCA = config.pca_method == "KernelPCA"
-        pca_components = config.pca_components
+    if "PCA" in config.dim_reducer:
+        use_kernel_PCA = config.dim_reducer == "KernelPCA"
+        ndim_reduced = config.ndim_reduced
         pca_variance = config.pca_variance
 
-        if pca_components is None and pca_variance is None:
-            raise ValueError(
-                "Neither 'pca_components' nor 'pca_variance' was specified"
-            )
-        elif pca_components is not None and pca_variance is not None:
-            raise ValueError("Both 'pca_components' and 'pca_variance' was specified")
+        if ndim_reduced is None and pca_variance is None:
+            raise ValueError("Neither 'ndim_reduced' nor 'pca_variance' was specified")
+        elif ndim_reduced is not None and pca_variance is not None:
+            raise ValueError("Both 'ndim_reduced' and 'pca_variance' was specified")
 
-        if pca_components is not None:
-            assert isinstance(pca_components, int), "pca_components must be int"
-            n_components = pca_components
+        if ndim_reduced is not None:
+            assert isinstance(ndim_reduced, int), "ndim_reduced must be int"
+            n_components = ndim_reduced
         else:
             if use_kernel_PCA:
                 raise ValueError(
@@ -302,27 +300,29 @@ def get_parser():
         default=42,
         help="Random number generator (RNG) seed. Default: not controlled",
     )
-
-    # PCA Args
-    group = parser.add_argument_group("PCA Arguments")
+    # Dimensionality reduction args -------------------------------------------
+    group = parser.add_argument_group("Dimensionality reduction")
     group.add_argument(
-        "--pca-method",
+        "--dim-reducer",
         type=str,
         default="None",
         choices=["None", "PCA", "KernelPCA"],
-        help="Toggle for using PCA",
+        help="Dimensionality reduction method to use. Default: %(default)s",
     )
     group.add_argument(
-        "--pca-components",
+        "--ndim-reduced",
         type=int,
         default=None,
-        help="Number of Principle Components to keep",
+        help="Number of dimensions to reduce the embeddings to.",
     )
     group.add_argument(
         "--pca-variance",
         type=float,
         default=None,
-        help="Percentage of Variance to be explained by Principle Components",
+        help=(
+            "Select the number of dimensions to use based on a target fraction of"
+            " the total variance explained by the retained dimensions.",
+        ),
     )
 
     # TODO Add arguments for Kernel PCA kernels
@@ -335,7 +335,7 @@ def get_parser():
         help="L2 normalize embeddings (After PCA if applicable)",
     )
 
-    # Clustering Args
+    # Clusterer args ----------------------------------------------------------
     group = parser.add_argument_group("Clustering")
     group.add_argument(
         "--clusterer-name",
