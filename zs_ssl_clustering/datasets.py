@@ -37,6 +37,8 @@ def determine_host():
         return "vaughan"
     if slurm_submit_host and slurm_submit_host.startswith("v"):
         return "vaughan"
+    if hostname and "srv.aau.dk" in hostname:
+        return "aau"
     return ""
 
 
