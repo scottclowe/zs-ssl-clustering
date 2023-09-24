@@ -113,12 +113,13 @@ def run(config):
         embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
 
     clusterer_args = {
+        "max_iter",
         "distance_metric",
         "aggclust_linkage",
         "aggclust_dist_thresh",
-        "max_iter",
     }
     clusterer_args_used = set()
+
     if config.clusterer_name == "KMeans":
         clusterer = KMeans(
             n_clusters=n_clusters_gt,
@@ -129,6 +130,7 @@ def run(config):
             verbose=config.verbose,
         )
         clusterer_args_used = clusterer_args_used.union({"seed", "max_iter"})
+
     elif config.clusterer_name == "SpectralClustering":
         # TODO Look into this:
         # Requires the number of clusters
@@ -141,6 +143,7 @@ def run(config):
             verbose=config.verbose > 0,
         )
         clusterer_args_used = clusterer_args_used.union({"seed"})
+
     elif config.clusterer_name == "AgglomerativeClustering":
         # Can work with specified number of clusters, as well as unknown (which requires a distance threshold)
         # We can also impose some structure metric through the "connectivity" argument
@@ -157,12 +160,14 @@ def run(config):
                 "aggclust_dist_thresh",
             }
         )
+
     elif config.clusterer_name == "HDBSCAN":
         clusterer = HDBSCAN(
             min_cluster_size=2,
             metric=config.distance_metric,
         )
         clusterer_args_used.add("distance_metric")
+
     else:
         raise ValueError(f"Unrecognized clusterer: '{config.clusterer_name}'")
 
@@ -376,6 +381,12 @@ def get_parser():
         help="Metric function for clustering methods",
     )
     group.add_argument(
+        "--max-iter",
+        type=int,
+        default=1_000,
+        help="Maximum number of iterations for iterative clusterers. Default: %(default)s",
+    )
+    group.add_argument(
         "--aggclust-linkage",
         type=str,
         default="ward",
@@ -388,14 +399,6 @@ def get_parser():
         default=1,
         help="Distance threshold for agglomerative clustering method",
     )
-    group.add_argument(
-        "--max-iter",
-        type=int,
-        default=1_000,
-        help="Maximum number of iterations for iterative clusterers. Default: %(default)s",
-    )
-
-    # TODO Add more arguments for clustering
 
     # Logging args ------------------------------------------------------------
     group = parser.add_argument_group("Debugging and logging")
