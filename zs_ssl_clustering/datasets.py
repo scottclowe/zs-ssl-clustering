@@ -287,13 +287,9 @@ def fetch_image_dataset(
         )
 
     elif dataset == "fashionmnist":
-        if root:
-            pass
-        elif host == "vaughan":
-            root = "/scratch/ssd004/datasets/"
-        else:
+        if not root:
             root = "~/Datasets"
-        # Will read from [root]/FashionMNIST/processed
+        # Will read from [root]/FashionMNIST/raw
         dataset_train = torchvision.datasets.FashionMNIST(
             root,
             train=True,
@@ -309,13 +305,9 @@ def fetch_image_dataset(
         )
 
     elif dataset == "kmnist":
-        if root:
-            pass
-        elif host == "vaughan":
-            root = "/scratch/ssd004/datasets/"
-        else:
+        if not root:
             root = "~/Datasets"
-        # Will read from [root]/KMNIST/processed
+        # Will read from [root]/KMNIST/raw
         dataset_train = torchvision.datasets.KMNIST(
             root,
             train=True,
@@ -341,20 +333,20 @@ def fetch_image_dataset(
         if root:
             pass
         elif host == "vaughan":
-            root = "/scratch/ssd002/datasets/"
+            root = "/scratch/ssd004/datasets/"
         elif host == "mars":
             root = "/scratch/gobi1/datasets/"
         else:
             root = "~/Datasets"
         dataset_train = torchvision.datasets.SVHN(
-            os.path.join(root, dataset),
+            os.path.join(root, "svhn"),
             split="train",
             transform=transform_train,
             download=download,
         )
         dataset_val = None
         dataset_test = torchvision.datasets.SVHN(
-            os.path.join(root, dataset),
+            os.path.join(root, "svhn"),
             split="test",
             transform=transform_eval,
             download=download,
@@ -366,20 +358,18 @@ def fetch_image_dataset(
         if root:
             pass
         elif host == "vaughan":
-            root = "/scratch/ssd004/datasets/"
-        elif host == "mars":
-            root = "/scratch/gobi1/datasets/"
+            root = "/scratch/ssd004/datasets/NABirds/nabirds"
         else:
-            root = "~/Datasets"
+            root = "~/Datasets/NABirds"
         dataset_train = NABirds(
-            os.path.join(root, "nabirds"),
+            root,
             train=True,
             transform=transform_train,
             download=False,
         )
         dataset_val = None
         dataset_test = NABirds(
-            os.path.join(root, "nabirds"),
+            root,
             train=False,
             transform=transform_eval,
             download=False,
@@ -422,10 +412,16 @@ def fetch_image_dataset(
     elif dataset == "inaturalist":
         # Defaults to iNaturalist 2021 full train split
         # TODO Add older iNat versions?
-        if not root:
-            root = "~/Datasets"
+        if root:
+            pass
+        elif host == "vaughan":
+            # Not working because directory structure is
+            # 2021/train instead of 2021_train
+            root = "/datasets/inat_comp"
+        else:
+            root = "~/Datasets/iNaturalist"
         dataset_train = torchvision.datasets.INaturalist(
-            os.path.join(root, dataset),
+            root,
             version="2021_train",
             target_type="full",
             transform=transform_train,
@@ -433,20 +429,26 @@ def fetch_image_dataset(
         )
         dataset_val = None
         dataset_test = torchvision.datasets.INaturalist(
-            os.path.join(root, dataset),
+            root,
             version="2021_valid",
             target_type="full",
             transform=transform_eval,
             download=download,
         )
 
-    elif dataset == "inaturalist-mini":
+    elif dataset == "inaturalistmini":
         # Defaults to iNaturalist 2021 mini train split
         # TODO Add older iNat versions?
-        if not root:
-            root = "~/Datasets"
+        if root:
+            pass
+        elif host == "vaughan":
+            # Not working because directory structure is
+            # 2021/train instead of 2021_train
+            root = "/datasets/inat_comp"
+        else:
+            root = "~/Datasets/iNaturalist"
         dataset_train = torchvision.datasets.INaturalist(
-            os.path.join(root, dataset),
+            root,
             version="2021_mini",
             target_type="full",
             transform=transform_train,
@@ -454,7 +456,7 @@ def fetch_image_dataset(
         )
         dataset_val = None
         dataset_test = torchvision.datasets.INaturalist(
-            os.path.join(root, dataset),
+            root,
             version="2021_valid",
             target_type="full",
             transform=transform_eval,
