@@ -242,7 +242,7 @@ def run(config):
     end_cluster = time.time()
 
     y_pred = clusterer.labels_
-    n_clusters_pred = len(np.unique(y_pred))
+    n_clusters_pred = sum(np.unique(y_pred) >= 0)
 
     ratio_clustered = np.sum(y_pred >= 0) / len(y_pred)
     ratio_unclustered = 1 - ratio_clustered
