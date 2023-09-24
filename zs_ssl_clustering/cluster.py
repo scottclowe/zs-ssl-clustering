@@ -254,6 +254,7 @@ def run(config):
     ratio_clustered = np.sum(y_pred >= 0) / len(y_pred)
     ratio_unclustered = 1 - ratio_clustered
     results = {
+        "n_samples": len(embeddings),
         "encoding_dim": encoding_dim,
         "reduced_dim": reduced_dim,
         "time_reducing": end_reducing - start_reducing,
