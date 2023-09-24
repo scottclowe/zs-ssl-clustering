@@ -11,8 +11,6 @@ import sklearn.model_selection
 import torch
 import torchvision.datasets
 
-from zs_ssl_clustering.dataloaders.nabirds import NABirds
-
 
 def determine_host():
     r"""
@@ -363,6 +361,8 @@ def fetch_image_dataset(
         )
 
     elif dataset == "nabirds":
+        from zs_ssl_clustering.dataloaders.nabirds import NABirds
+
         if root:
             pass
         elif host == "vaughan":
