@@ -382,10 +382,10 @@ def get_parser():
     group.add_argument(
         "--wandb-entity",
         type=str,
+        default="uoguelph_mlrg",
         help=(
             "The entity (organization) within which your wandb project is"
-            ' located. By default, this will be your "default location" set on'
-            " wandb at https://wandb.ai/settings"
+            " located. Default: %(default)s",
         ),
     )
     group.add_argument(
