@@ -320,7 +320,7 @@ def embed_dataset(dataloader, encoder, device, is_distributed=False, log_interva
     y_true_list = []
     for i_batch, (stimuli, y_true) in enumerate(dataloader):
         if i_batch % log_interval == 0:
-            print(f"Processing batch {i_batch + 1}/{len(dataloader)}")
+            print(f"Processing batch {i_batch + 1:3d}/{len(dataloader):3d}", flush=True)
         stimuli = stimuli.to(device)
         y_true = y_true.to(device)
         with torch.no_grad():
