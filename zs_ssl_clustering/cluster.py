@@ -52,7 +52,9 @@ def run(config):
     y_true = data["y_true"]
     n_clusters_gt = len(np.unique(y_true))
 
-    if "PCA" in config.dim_reducer:
+    if config.dim_reducer == "None":
+        pass
+    elif "PCA" in config.dim_reducer:
         use_kernel_PCA = config.dim_reducer == "KernelPCA"
         ndim_reduced = config.ndim_reduced
         pca_variance = config.pca_variance
@@ -101,6 +103,10 @@ def run(config):
                 f"PCA Explained Variance: {np.sum(pca.explained_variance_ratio_)*100} %"
             )
         print(f"PCA Fitting time: {end_pca-start_pca:.2f}s")
+    else:
+        raise ValueError(
+            f"Unrecognized dimensionality reduction method: '{config.dim_reducer}'"
+        )
 
     # TODO: Maybe do before PCA?
     if config.normalize:
@@ -151,6 +157,8 @@ def run(config):
         clusterer = SpectralClustering(
             n_clusters=n_clusters_gt, random_state=config.seed
         )
+    else:
+        raise ValueError(f"Unrecognized clusterer: '{config.clusterer_name}'")
 
     # Wipe the state of cluster arguments that were not relevant to the
     # chosen clusterer.
