@@ -62,6 +62,7 @@ def run(config):
     embeddings = data["embeddings"]
     y_true = data["y_true"]
     n_clusters_gt = len(np.unique(y_true))
+    encoding_dim = embeddings.shape[-1]
 
     if config.dim_reducer == "None":
         pass
@@ -94,8 +95,6 @@ def run(config):
             embeddings, axis=0
         )
 
-        shape_before = embeddings.shape[-1]
-
         start_pca = time.time()
         if use_kernel_PCA:
             pca = KernelPCA(
@@ -108,7 +107,7 @@ def run(config):
 
         shape_after = embeddings.shape[-1]
 
-        print(f"Shape Before/After PCA: {shape_before}/{shape_after}")
+        print(f"Shape Before/After PCA: {encoding_dim}/{shape_after}")
         if not use_kernel_PCA:
             print(
                 f"PCA Explained Variance: {np.sum(pca.explained_variance_ratio_)*100} %"
@@ -122,6 +121,8 @@ def run(config):
     # TODO: Maybe do before PCA?
     if config.normalize:
         embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+
+    reduced_dim = embeddings.shape[-1]
 
     clusterer_args = {
         "max_iter",
@@ -246,6 +247,8 @@ def run(config):
     ratio_clustered = np.sum(y_pred >= 0) / len(y_pred)
     ratio_unclustered = 1 - ratio_clustered
     results = {
+        "encoding_dim": encoding_dim,
+        "reduced_dim": reduced_dim,
         "time_clustering": end_cluster - start_cluster,
         "num_cluster_true": n_clusters_gt,
         "num_cluster_pred": n_clusters_pred,
