@@ -400,10 +400,10 @@ def run(config):
     results.update(_results)
     if config.distance_metric not in ["euclidean", "infinity", "p"]:
         try:
-            results[f"silhouette-{config.distance_metric}_true"] = (
-                sklearn.metrics.silhouette_score(
-                    embeddings, y_true, metric=config.distance_metric
-                ),
+            results[
+                f"silhouette-{config.distance_metric}_true"
+            ] = sklearn.metrics.silhouette_score(
+                embeddings, y_true, metric=config.distance_metric
             )
         except Exception as err:
             print(f"Error computing silhouette-{config.distance_metric}_true: {err}")
@@ -418,10 +418,10 @@ def run(config):
         )
         if config.distance_metric not in ["euclidean", "infinity", "p"]:
             try:
-                results[f"silhouette-{config.distance_metric}_pred"] = (
-                    sklearn.metrics.silhouette_score(
-                        embeddings, y_pred, metric=config.distance_metric
-                    ),
+                results[
+                    f"silhouette-{config.distance_metric}_pred"
+                ] = sklearn.metrics.silhouette_score(
+                    embeddings, y_pred, metric=config.distance_metric
                 )
             except Exception as err:
                 print(
@@ -446,10 +446,10 @@ def run(config):
             ] = sklearn.metrics.silhouette_score(ec, ycp, metric="euclidean")
             if config.distance_metric not in ["euclidean", "infinity", "p"]:
                 try:
-                    results[f"silhouette-{config.distance_metric}_pred_clus"] = (
-                        sklearn.metrics.silhouette_score(
-                            ec, ycp, metric=config.distance_metric
-                        ),
+                    results[
+                        f"silhouette-{config.distance_metric}_pred_clus"
+                    ] = sklearn.metrics.silhouette_score(
+                        ec, ycp, metric=config.distance_metric
                     )
                 except Exception as err:
                     print(
