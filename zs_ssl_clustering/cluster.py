@@ -205,6 +205,7 @@ def run(config):
             metric=config.distance_metric,
             verbose=config.verbose,
             random_state=config.seed,
+            method="exact",  # The default, "barnes_hut", only supports n_components<4
             n_jobs=config.workers,
         )
         clusterer_args_used = clusterer_args_used.union(
