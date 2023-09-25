@@ -387,17 +387,20 @@ def run(config):
         "homogeneity": sklearn.metrics.homogeneity_score(y_true, y_pred),
         "CHS_true": sklearn.metrics.calinski_harabasz_score(embeddings, y_true),
         "DBS_true": sklearn.metrics.davies_bouldin_score(embeddings, y_true),
-        "silhouette_true": sklearn.metrics.silhouette_score(
+        "silhouette-euclidean_true": sklearn.metrics.silhouette_score(
             embeddings, y_true, metric="euclidean"
         ),
     }
     results.update(_results)
-    if config.distance_metric != "euclidean":
-        results[f"silhouette-{config.distance_metric}_true"] = (
-            sklearn.metrics.silhouette_score(
-                embeddings, y_true, metric=config.distance_metric
-            ),
-        )
+    if config.distance_metric not in ["euclidean", "infinity", "p"]:
+        try:
+            results[f"silhouette-{config.distance_metric}_true"] = (
+                sklearn.metrics.silhouette_score(
+                    embeddings, y_true, metric=config.distance_metric
+                ),
+            )
+        except Exception as err:
+            print(f"Error computing silhouette-{config.distance_metric}_true: {err}")
 
     if n_clusters_pred > 1 and len(np.unique(y_pred)) < len(embeddings):
         results["CHS_pred"] = sklearn.metrics.calinski_harabasz_score(
