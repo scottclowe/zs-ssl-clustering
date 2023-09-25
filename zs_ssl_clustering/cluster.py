@@ -157,11 +157,47 @@ def run(config):
                 f"PCA Explained Variance: {np.sum(pca.explained_variance_ratio_)*100} %"
             )
             results["pca_explained_ratio"] = np.sum(pca.explained_variance_ratio_)
-        print(f"PCA Fitting time: {end_pca-start_pca:.2f}s")
+        print(f"{config.dim_reducer} fitting time: {results['time_pca']:.2f}s")
     else:
         raise ValueError(
             f"Unrecognized dimensionality reduction method: '{config.dim_reducer}'"
         )
+
+    if config.dim_reducer_man is None or config.dim_reducer_man == "None":
+        pass
+    elif config.dim_reducer_man == "UMAP":
+        if config.ndim_reduced_man is None:
+            raise ValueError(
+                "UMAP reduction was requested, but 'ndim_reduced_man' was not set."
+            )
+
+        import umap
+
+        start_reduce_man = time.time()
+        reducer_man = umap.UMAP(
+            n_neighbors=30,
+            n_components=config.ndim_reduced_man,
+            min_dist=0.0,
+            metric=config.distance_metric,
+            random_state=config.seed,
+            n_jobs=config.workers,
+            verbose=config.verbose > 0,
+        )
+        clusterer_args_used = clusterer_args_used.union(
+            {"distance_metric", "seed", "workers"}
+        )
+        embeddings = reducer_man.fit_transform(embeddings)
+        end_reduce_man = time.time()
+        results["time_reduce_man"] = end_reduce_man - start_reduce_man
+        print(
+            f"{config.dim_reducer_man} fitting time: {results['time_reduce_man']:.2f}s"
+        )
+
+    else:
+        raise ValueError(
+            f"Unrecognized nearest-neighbour dimensionality reduction method: '{config.dim_reducer_man}'"
+        )
+
     end_reducing = time.time()
 
     # TODO: Maybe do before PCA?
@@ -490,7 +526,7 @@ def get_parser():
         help="Random number generator (RNG) seed. Default: %(default)s",
     )
     # Dimensionality reduction args -------------------------------------------
-    group = parser.add_argument_group("Dimensionality reduction")
+    group = parser.add_argument_group("Dimensionality reduction (variance/PCA based)")
     group.add_argument(
         "--dim-reducer",
         type=str,
@@ -519,6 +555,22 @@ def get_parser():
         default="linear",
         choices=["linear", "poly", "rbf", "sigmoid", "cosine"],
         help="PCA kernel to use. Default: %(default)s",
+    )
+    group = parser.add_argument_group(
+        "Dimensionality reduction (nearest-neighbour/manifold based)"
+    )
+    group.add_argument(
+        "--dim-reducer-man",
+        type=str,
+        default="None",
+        choices=["None", "UMAP"],
+        help="Manifold dimensionality reduction method to use. Default: %(default)s",
+    )
+    group.add_argument(
+        "--ndim-reduced-man",
+        type=int,
+        default=None,
+        help="Number of dimensions to reduce the embeddings to.",
     )
 
     # TODO Add arguments for Kernel PCA kernels
