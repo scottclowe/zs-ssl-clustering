@@ -96,15 +96,12 @@ def run(config):
         ndim_reduced = config.ndim_reduced
         pca_variance = config.pca_variance
 
-        if ndim_reduced is None and pca_variance is None:
+        if ndim_reduced is None and pca_variance is None and not use_kernel_PCA:
             raise ValueError("Neither 'ndim_reduced' nor 'pca_variance' was specified")
         elif ndim_reduced is not None and pca_variance is not None:
             raise ValueError("Both 'ndim_reduced' and 'pca_variance' was specified")
 
-        if ndim_reduced is not None:
-            assert isinstance(ndim_reduced, int), "ndim_reduced must be int"
-            n_components = ndim_reduced
-        else:
+        if pca_variance is not None:
             if use_kernel_PCA:
                 raise ValueError(
                     "Cannot use KernelPCA by specifying the variance to be kept"
@@ -114,6 +111,9 @@ def run(config):
                 pca_variance > 0.0 and pca_variance < 1.0
             ), "pca_variance must be between 0 and 1"
             n_components = pca_variance
+        else:
+            assert isinstance(ndim_reduced, int), "ndim_reduced must be int"
+            n_components = ndim_reduced
 
         # Standardize to zero mean, unit variance
         embeddings = (embeddings - np.mean(embeddings, axis=0)) / np.std(
