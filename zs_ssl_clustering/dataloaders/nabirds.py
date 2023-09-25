@@ -84,8 +84,7 @@ class NABirds(VisionDataset):
         # Load in the class data
         self.class_names = load_class_names(dataset_path)
         self.class_hierarchy = load_hierarchy(dataset_path)
-
-        self.targets = torch.Tensor(
+        self.targets = torch.tensor(
             [
                 self.label_map[self.data.iloc[idx].target]
                 for idx in range(len(self.data))
