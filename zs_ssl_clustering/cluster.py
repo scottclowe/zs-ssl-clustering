@@ -142,10 +142,10 @@ def run(config):
         "max_iter",
         "min_samples",
         "workers",
-        "aggclust_linkage",
-        "aggclust_dist_thresh",
         "affinity_damping",
         "affinity_conv_iter",
+        "aggclust_linkage",
+        "aggclust_dist_thresh",
         "optics_method",
         "optics_xi",
     }
