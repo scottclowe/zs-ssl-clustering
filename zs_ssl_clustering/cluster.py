@@ -356,6 +356,13 @@ def run(config):
                     ),
                 )
 
+    # Now that we've handled computing silhouette_score with a custom distance
+    # metric if specified, we can wipe the state of the distance_metric if it
+    # was not used by the clusterer to show it was not relevant.
+    key = "distance_metric"
+    if key in clusterer_args_unused and config.log_wandb:
+        wandb.config.update({key: None}, allow_val_change=True)
+
     if hasattr(clusterer, "n_iter_"):
         results["iter"] = clusterer.n_iter_  # Number of iterations run.
         results["converged"] = clusterer.n_iter_ < config.max_iter
