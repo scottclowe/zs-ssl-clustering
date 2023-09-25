@@ -1,0 +1,53 @@
+MAE - IM-1K:
+timm_vit_base_patch16_224.mae
+timm_vit_large_patch16_224.mae
+timm_vit_huge_patch16_224.mae
+
+DINO - IM-1K:
+dino_vits16
+dino_vits8
+dino_vitb16
+dino_vitb8
+dino_resnet50
+
+DINOv2 - LVD-142M:
+dinov2_vits14
+dinov2_vitb14
+dinov2_vitl14
+dinov2_vitg14
+
+CLIP - UNKN:
+RN50
+RN101
+RN50x4
+RN50x16
+RN50x64
+ViT-B/32
+ViT-B/16
+ViT-L/14
+ViT-L/14@336px
+
+SwAV - IM-1K:
+swav_resnet50
+swav_resnet50w2
+swav_resnet50w4
+swav_resnet50w5
+
+Barlow Twins- IM-1K:
+barlowtwins_resnet50
+
+VICReg - IM-1K:
+vicreg_resnet50
+vicreg_resnet50x2
+vicreg_resnet200x2 
+
+VICRegL - IM-1K:
+vicregl_resnet50_alpha0p9
+vicregl_resnet50_alpha0p75
+vicregl_convnext_small_alpha0p9
+vicregl_convnext_small_alpha0p75
+vicregl_convnext_base_alpha0p9
+vicregl_convnext_base_alpha0p75
+
+VICRegL - IM-22k:
+vicregl_convnext_xlarge_alpha0p75

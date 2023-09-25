@@ -94,6 +94,58 @@ class DINOv2(nn.Module):
         return self.model(x)
 
 
+class DINOv1(nn.Module):
+    def __init__(self, model_name="vits16"):
+        super().__init__()
+        if "dino_" not in model_name:
+            model_name = "dino_" + model_name
+        self.model = torch.hub.load("facebookresearch/dino:main", model_name)
+
+    def forward(self, x):
+        return self.model(x)
+
+
+class SWAV(nn.Module):
+    def __init__(self, model_name="resnet50"):
+        super().__init__()
+        model_name = model_name.replace("swav_", "")
+        self.model = torch.hub.load("facebookresearch/swav:main", model_name)
+        self.model.fc = nn.Identity()
+
+    def forward(self, x):
+        return self.model(x)
+
+
+class Barlow(nn.Module):
+    def __init__(self, model_name="resnet50"):
+        super().__init__()
+        model_name = model_name.replace("barlowtwins_", "")
+        self.model = torch.hub.load("facebookresearch/barlowtwins:main", model_name)
+
+    def forward(self, x):
+        return self.model(x)
+
+
+class VICReg(nn.Module):
+    def __init__(self, model_name="resnet50"):
+        super().__init__()
+        model_name = model_name.replace("vicreg_", "")
+        self.model = torch.hub.load("facebookresearch/vicreg:main", model_name)
+
+    def forward(self, x):
+        return self.model(x)
+
+
+class VICRegL(nn.Module):
+    def __init__(self, model_name="resnet50"):
+        super().__init__()
+        model_name = model_name.replace("vicregl_", "")
+        self.model = torch.hub.load("facebookresearch/vicregl:main", model_name)
+
+    def forward(self, x):
+        return self.model(x)[-1]
+
+
 class CLIP(nn.Module):
     def __init__(self, model_name="ViT-B/32"):
         super().__init__()
@@ -114,6 +166,21 @@ def get_encoder(model_name):
 
     elif model_name.startswith("dinov2"):
         return DINOv2(model_name)
+
+    elif model_name.startswith("dino"):
+        return DINOv1(model_name)
+
+    elif model_name.startswith("barlowtwins"):
+        return Barlow(model_name)
+
+    elif model_name.startswith("swav"):
+        return SWAV(model_name)
+
+    elif model_name.startswith("vicregl"):
+        return VICRegL(model_name)
+
+    elif model_name.startswith("vicreg"):
+        return VICReg(model_name)
 
     elif model_name.startswith("clip"):
         return CLIP(model_name)
