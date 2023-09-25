@@ -370,12 +370,12 @@ def run(config):
         " evaluation results:"
     )
     for k, v in results.items():
-        if k == "time_clustering":
-            print(f"  {k + ' ':.<24s} {v:.4f} seconds")
+        if "time" in k:
+            print(f"  {k + ' ':.<24s} {v:10.4f} seconds")
         elif isinstance(k, int):
-            print(f"  {k + ' ':.<24s} {v:>3d}")
+            print(f"  {k + ' ':.<24s} {v:>5d}")
         else:
-            print(f"  {k + ' ':.<24s} {v:.4f}")
+            print(f"  {k + ' ':.<24s} {v:10.4f}")
 
     if config.log_wandb:
         wandb.log(results)
