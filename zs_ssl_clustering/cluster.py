@@ -263,9 +263,9 @@ def run(config):
     end_cluster = time.time()
 
     y_pred = clusterer.labels_
-    n_clusters_pred = sum(np.unique(y_pred) >= 0)
-
-    ratio_clustered = np.sum(y_pred >= 0) / len(y_pred)
+    select_clustered = y_pred >= 0
+    n_clusters_pred = len(np.unique(y_pred[select_clustered]))
+    ratio_clustered = np.sum(select_clustered) / len(y_pred)
     ratio_unclustered = 1 - ratio_clustered
     results = {
         "n_samples": len(embeddings),
@@ -309,6 +309,29 @@ def run(config):
                     embeddings, y_pred, metric=config.distance_metric
                 ),
             )
+
+    # Repeat metrics, but considering only the samples that were clustered
+    if ratio_clustered > 0:
+        yct = y_true[select_clustered]
+        ycp = y_pred[select_clustered]
+        ec = embeddings[select_clustered]
+        results["AMI_clus"] = sklearn.metrics.adjusted_mutual_info_score(yct, ycp)
+        results["ARI_clus"] = sklearn.metrics.adjusted_rand_score(yct, ycp)
+        results["FMS_clus"] = sklearn.metrics.fowlkes_mallows_score(yct, ycp)
+        results["completeness_clus"] = sklearn.metrics.completeness_score(yct, ycp)
+        results["homogeneity_clus"] = sklearn.metrics.homogeneity_score(yct, ycp)
+        if n_clusters_pred > 1 and n_clusters_pred < len(ec):
+            results["CHS_pred_clus"] = sklearn.metrics.calinski_harabasz_score(ec, ycp)
+            results["DBS_pred_clus"] = sklearn.metrics.davies_bouldin_score(ec, ycp)
+            results["silhouette_pred_clus"] = sklearn.metrics.silhouette_score(
+                ec, ycp, metric="euclidean"
+            )
+            if config.distance_metric != "euclidean":
+                results[f"silhouette-{config.distance_metric}_pred_clus"] = (
+                    sklearn.metrics.silhouette_score(
+                        ec, ycp, metric=config.distance_metric
+                    ),
+                )
 
     if hasattr(clusterer, "n_iter_"):
         results["iter"] = clusterer.n_iter_  # Number of iterations run.
