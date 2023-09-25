@@ -25,19 +25,15 @@ METRICS = [
     "canberra",
     "chebyshev",
     "cityblock",
-    "correlation",
-    "cosine",
     "euclidean",
-    "haversine",
+    "infinity",
     "l1",
     "l2",
-    "jensenshannon",
-    "mahalanobis",
+    "mahalanobis",  # Must provide either V or VI in ``metric_params``.
     "manhattan",
-    "matching",
-    "minkowski",
-    "seuclidean",
-    "sqeuclidean",
+    "minkowski",  # Must provide a p value in ``p`` or ``metric_params``.
+    "p",
+    "seuclidean",  # Needs an argument array ``V`` with variances for each coordinate.
 ]
 
 
