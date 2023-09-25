@@ -90,9 +90,11 @@ def run(config):
 
     start_reducing = time.time()
     if config.dim_reducer == "None":
-        pass
+        wandb.config.update({"pca_kernel": None}, allow_val_change=True)
     elif "PCA" in config.dim_reducer:
         use_kernel_PCA = config.dim_reducer == "KernelPCA"
+        if not use_kernel_PCA:
+            config.pca_kernel = "none"
         ndim_reduced = config.ndim_reduced
         pca_variance = config.pca_variance
 
@@ -123,7 +125,7 @@ def run(config):
         if use_kernel_PCA:
             pca = KernelPCA(
                 n_components=n_components,
-                kernel="linear",
+                kernel=config.pca_kernel,
                 random_state=config.seed,
                 n_jobs=config.workers,
             )
@@ -484,6 +486,13 @@ def get_parser():
             "Select the number of dimensions to use based on a target fraction of"
             " the total variance explained by the retained dimensions."
         ),
+    )
+    group.add_argument(
+        "--pca-kernel",
+        type=str,
+        default="linear",
+        choices=["linear", "poly", "rbf", "sigmoid", "cosine"],
+        help="PCA kernel to use. Default: %(default)s",
     )
 
     # TODO Add arguments for Kernel PCA kernels
