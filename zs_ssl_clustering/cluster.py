@@ -113,9 +113,19 @@ def run(config):
                 pca_variance > 0.0 and pca_variance < 1.0
             ), "pca_variance must be between 0 and 1"
             n_components = pca_variance
-        else:
-            assert isinstance(ndim_reduced, int), "ndim_reduced must be int"
+        elif ndim_reduced == "mle":
+            if use_kernel_PCA:
+                raise ValueError(
+                    "Cannot use Minka's MLE is used to guess the dimension with KernelPCA."
+                )
             n_components = ndim_reduced
+        elif ndim_reduced.isdecimal():
+            n_components = int(ndim_reduced)
+        else:
+            raise ValueError(
+                f"Unrecognized value for 'ndim_reduced': '{ndim_reduced}'."
+                " Should be 'mle' or an integer value."
+            )
 
         # Standardize to zero mean, unit variance
         embeddings -= np.mean(embeddings, axis=0)
@@ -474,9 +484,9 @@ def get_parser():
     )
     group.add_argument(
         "--ndim-reduced",
-        type=int,
+        type=str,
         default=None,
-        help="Number of dimensions to reduce the embeddings to.",
+        help="Number of dimensions to reduce the embeddings to. Can be either 'mle' or an integer.",
     )
     group.add_argument(
         "--pca-variance",
