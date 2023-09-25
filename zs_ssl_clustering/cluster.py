@@ -396,8 +396,10 @@ def run(config):
             print(f"  {k + ' ':.<24s} {v:10.4f} seconds")
         elif isinstance(k, int):
             print(f"  {k + ' ':.<24s} {v:>5d}")
-        else:
+        elif isinstance(k, float):
             print(f"  {k + ' ':.<24s} {v:10.4f}")
+        else:
+            print(f"  {k + ' ':.<24s} {v}")
 
     if config.log_wandb:
         wandb.log(results)
