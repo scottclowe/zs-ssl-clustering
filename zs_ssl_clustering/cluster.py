@@ -119,6 +119,12 @@ def run(config):
                 pca_variance > 0.0 and pca_variance < 1.0
             ), "pca_variance must be between 0 and 1"
             n_components = pca_variance
+        elif ndim_reduced is None:
+            if not use_kernel_PCA:
+                raise ValueError(
+                    "Neither 'ndim_reduced' nor 'pca_variance' was specified"
+                )
+            n_components = ndim_reduced
         elif ndim_reduced == "mle":
             if use_kernel_PCA:
                 raise ValueError(
