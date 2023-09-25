@@ -2,8 +2,8 @@
 #SBATCH --partition=cpu             # Which node partitions to use.
 #SBATCH --nodes=1                   # Number of nodes to request.
 #SBATCH --tasks-per-node=1          # Number of processes to spawn per node.
-#SBATCH --cpus-per-task=4           # Number of CPUs per task.
-#SBATCH --mem=10G                   # Total RAM.
+#SBATCH --cpus-per-task=2           # Number of CPUs per task.
+#SBATCH --mem=2G                    # Total RAM.
 #SBATCH --output=slogs/%x__%A_%a.out
                                     # %x=job-name, %A=job ID, %a=array value, %n=node rank, %t=task rank, %N=hostname
                                     # Note: You must create output directory "slogs" before launching job, otherwise it will immediately

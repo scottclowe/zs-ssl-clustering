@@ -116,9 +116,8 @@ def run(config):
             n_components = ndim_reduced
 
         # Standardize to zero mean, unit variance
-        embeddings = (embeddings - np.mean(embeddings, axis=0)) / np.std(
-            embeddings, axis=0
-        )
+        embeddings -= np.mean(embeddings, axis=0)
+        embeddings /= np.std(embeddings, axis=0)
 
         start_pca = time.time()
         if use_kernel_PCA:
