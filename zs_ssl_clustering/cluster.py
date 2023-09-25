@@ -457,7 +457,7 @@ def get_parser():
         default=None,
         help=(
             "Select the number of dimensions to use based on a target fraction of"
-            " the total variance explained by the retained dimensions.",
+            " the total variance explained by the retained dimensions."
         ),
     )
 
@@ -581,7 +581,7 @@ def get_parser():
         default="uoguelph_mlrg",
         help=(
             "The entity (organization) within which your wandb project is"
-            " located. Default: %(default)s",
+            " located. Default: %(default)s"
         ),
     )
     group.add_argument(
