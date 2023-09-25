@@ -42,7 +42,7 @@ def run(config):
     print("Configuration:")
     print()
     print(config)
-    print()
+    print(flush=True)
 
     if config.log_wandb:
         # Lazy import of wandb, since logging to wandb is optional
