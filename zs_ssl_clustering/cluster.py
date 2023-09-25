@@ -336,12 +336,17 @@ def run(config):
         results["silhouette_pred"] = sklearn.metrics.silhouette_score(
             embeddings, y_pred, metric="euclidean"
         )
-        if config.distance_metric != "euclidean":
-            results[f"silhouette-{config.distance_metric}_pred"] = (
-                sklearn.metrics.silhouette_score(
-                    embeddings, y_pred, metric=config.distance_metric
-                ),
-            )
+        if config.distance_metric not in ["euclidean", "infinity", "p"]:
+            try:
+                results[f"silhouette-{config.distance_metric}_pred"] = (
+                    sklearn.metrics.silhouette_score(
+                        embeddings, y_pred, metric=config.distance_metric
+                    ),
+                )
+            except Exception as err:
+                print(
+                    f"Error computing silhouette-{config.distance_metric}_pred: {err}"
+                )
 
     # Repeat metrics, but considering only the samples that were clustered
     if ratio_clustered > 0:
@@ -359,12 +364,17 @@ def run(config):
             results["silhouette_pred_clus"] = sklearn.metrics.silhouette_score(
                 ec, ycp, metric="euclidean"
             )
-            if config.distance_metric != "euclidean":
-                results[f"silhouette-{config.distance_metric}_pred_clus"] = (
-                    sklearn.metrics.silhouette_score(
-                        ec, ycp, metric=config.distance_metric
-                    ),
-                )
+            if config.distance_metric not in ["euclidean", "infinity", "p"]:
+                try:
+                    results[f"silhouette-{config.distance_metric}_pred_clus"] = (
+                        sklearn.metrics.silhouette_score(
+                            ec, ycp, metric=config.distance_metric
+                        ),
+                    )
+                except Exception as err:
+                    print(
+                        f"Error computing silhouette-{config.distance_metric}_pred_clus: {err}"
+                    )
 
     # Now that we've handled computing silhouette_score with a custom distance
     # metric if specified, we can wipe the state of the distance_metric if it
