@@ -20,6 +20,26 @@ CLUSTERERS = [
     "OPTICS",
 ]
 
+METRICS = [
+    "braycurtis",
+    "canberra",
+    "chebyshev",
+    "cityblock",
+    "correlation",
+    "cosine",
+    "euclidean",
+    "haversine",
+    "l1",
+    "l2",
+    "jensenshannon",
+    "mahalanobis",
+    "manhattan",
+    "matching",
+    "minkowski",
+    "seuclidean",
+    "sqeuclidean",
+]
+
 
 def run(config):
     print("Configuration:")
@@ -484,7 +504,7 @@ def get_parser():
         "--distance-metric",
         type=str,
         default="euclidean",
-        choices=list(sklearn.metrics.pairwise.PAIRWISE_DISTANCE_FUNCTIONS.keys()),
+        choices=METRICS,
         help="Metric function for clustering methods",
     )
     group.add_argument(
