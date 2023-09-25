@@ -2,6 +2,7 @@
 # Model training .gitignore files
 ##---------------------------------------------------
 
+.cache
 checkpoints/
 checkpoints_finished
 checkpoints_working/

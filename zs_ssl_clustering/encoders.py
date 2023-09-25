@@ -169,7 +169,7 @@ class MoCoV3(nn.Module):
 
         model_name = model_name.replace("mocov3_", "")
 
-        self.model = moco.load_pretrained_model(model_name, "./pretrained")
+        self.model = moco.load_pretrained_model(model_name)
         if "vit" in model_name:
             self.model.head = nn.Identity()
         else:
