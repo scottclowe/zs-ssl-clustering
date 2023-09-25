@@ -89,7 +89,7 @@ def run(config):
     results = {}
 
     start_reducing = time.time()
-    if config.dim_reducer == "None":
+    if config.dim_reducer is None or config.dim_reducer == "None":
         wandb.config.update({"pca_kernel": None}, allow_val_change=True)
     elif "PCA" in config.dim_reducer:
         use_kernel_PCA = config.dim_reducer == "KernelPCA"
@@ -139,11 +139,15 @@ def run(config):
                 random_state=config.seed,
                 n_jobs=config.workers,
             )
-            clusterer_args_used.add("workers")
+            clusterer_args_used = clusterer_args_used.union(
+                {"seed", "workers", "pca_kernel"}
+            )
         else:
             pca = PCA(n_components=n_components, random_state=config.seed)
+            clusterer_args_used.add("seed")
         embeddings = pca.fit_transform(embeddings)
         end_pca = time.time()
+        results["time_pca"] = end_pca - start_pca
 
         shape_after = embeddings.shape[-1]
 
