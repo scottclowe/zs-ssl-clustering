@@ -146,6 +146,7 @@ def run(config):
         "affinity_conv_iter",
         "aggclust_linkage",
         "aggclust_dist_thresh",
+        "hdbscan_method",
         "optics_method",
         "optics_xi",
     }
@@ -212,12 +213,14 @@ def run(config):
         clusterer = sklearn.cluster.HDBSCAN(
             min_cluster_size=config.min_samples,
             metric=config.distance_metric,
+            cluster_selection_method=config.hdbscan_method,
             n_jobs=config.workers,
         )
         clusterer_args_used = clusterer_args_used.union(
             {
                 "min_samples",
                 "distance_metric",
+                "hdbscan_method",
                 "workers",
             }
         )
@@ -526,6 +529,13 @@ def get_parser():
         type=float,
         default=1,
         help="Distance threshold for agglomerative clustering method",
+    )
+    group.add_argument(
+        "--hdbscan-method",
+        type=str,
+        default="eom",
+        choices=["eom", "leaf"],
+        help="HDBSCAN cluster extraction method. Default: %(default)s",
     )
     group.add_argument(
         "--optics-method",
