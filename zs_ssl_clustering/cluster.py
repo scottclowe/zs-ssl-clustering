@@ -458,8 +458,8 @@ def get_parser():
     group.add_argument(
         "--seed",
         type=int,
-        default=42,
-        help="Random number generator (RNG) seed. Default: not controlled",
+        default=0,
+        help="Random number generator (RNG) seed. Default: %(default)s",
     )
     # Dimensionality reduction args -------------------------------------------
     group = parser.add_argument_group("Dimensionality reduction")
