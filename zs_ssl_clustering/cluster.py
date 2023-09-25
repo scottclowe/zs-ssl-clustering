@@ -295,7 +295,7 @@ def run(config):
             ),
         )
 
-    if n_clusters_pred > 1 and n_clusters_pred < len(embeddings):
+    if n_clusters_pred > 1 and len(np.unique(y_pred)) < len(embeddings):
         results["CHS_pred"] = sklearn.metrics.calinski_harabasz_score(
             embeddings, y_pred
         )
