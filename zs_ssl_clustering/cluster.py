@@ -6,6 +6,7 @@ from datetime import datetime
 
 import numpy as np
 import sklearn.cluster
+import sklearn.manifold
 import sklearn.metrics
 from sklearn.decomposition import PCA, KernelPCA
 
@@ -165,10 +166,11 @@ def run(config):
 
     if config.dim_reducer_man is None or config.dim_reducer_man == "None":
         pass
+
     elif config.dim_reducer_man == "UMAP":
         if config.ndim_reduced_man is None:
             raise ValueError(
-                "UMAP reduction was requested, but 'ndim_reduced_man' was not set."
+                f"{config.dim_reducer_man} reduction was requested, but 'ndim_reduced_man' was not set."
             )
 
         import umap
@@ -184,6 +186,30 @@ def run(config):
             verbose=config.verbose > 0,
         )
         clusterer_args_used = clusterer_args_used.union({"distance_metric", "seed"})
+        embeddings = reducer_man.fit_transform(embeddings)
+        end_reduce_man = time.time()
+        results["time_reduce_man"] = end_reduce_man - start_reduce_man
+        print(
+            f"{config.dim_reducer_man} fitting time: {results['time_reduce_man']:.2f}s"
+        )
+
+    elif config.dim_reducer_man == "tSNE":
+        if config.ndim_reduced_man is None:
+            raise ValueError(
+                f"{config.dim_reducer_man} reduction was requested, but 'ndim_reduced_man' was not set."
+            )
+
+        start_reduce_man = time.time()
+        reducer_man = sklearn.manifold.TSNE(
+            n_components=config.ndim_reduced_man,
+            metric=config.distance_metric,
+            verbose=config.verbose,
+            random_state=config.seed,
+            n_jobs=config.workers,
+        )
+        clusterer_args_used = clusterer_args_used.union(
+            {"distance_metric", "seed", "workers"}
+        )
         embeddings = reducer_man.fit_transform(embeddings)
         end_reduce_man = time.time()
         results["time_reduce_man"] = end_reduce_man - start_reduce_man
@@ -561,7 +587,7 @@ def get_parser():
         "--dim-reducer-man",
         type=str,
         default="None",
-        choices=["None", "UMAP"],
+        choices=["None", "UMAP", "tSNE"],
         help="Manifold dimensionality reduction method to use. Default: %(default)s",
     )
     group.add_argument(
