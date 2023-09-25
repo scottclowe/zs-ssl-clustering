@@ -91,11 +91,16 @@ def run(config):
 
     start_reducing = time.time()
     if config.dim_reducer is None or config.dim_reducer == "None":
-        wandb.config.update({"pca_kernel": None}, allow_val_change=True)
+        if config.log_wandb:
+            wandb.config.update(
+                {"dim_reducer": None, "pca_kernel": None}, allow_val_change=True
+            )
     elif "PCA" in config.dim_reducer:
         use_kernel_PCA = config.dim_reducer == "KernelPCA"
         if not use_kernel_PCA:
             config.pca_kernel = "none"
+            if config.log_wandb:
+                wandb.config.update({"pca_kernel": "none"}, allow_val_change=True)
         ndim_reduced = config.ndim_reduced
         pca_variance = config.pca_variance
 
@@ -165,7 +170,8 @@ def run(config):
         )
 
     if config.dim_reducer_man is None or config.dim_reducer_man == "None":
-        pass
+        if config.log_wandb:
+            wandb.config.update({"dim_reducer_man": None}, allow_val_change=True)
 
     elif config.dim_reducer_man == "UMAP":
         if config.ndim_reduced_man is None:
