@@ -180,12 +180,10 @@ def run(config):
             min_dist=0.0,
             metric=config.distance_metric,
             random_state=config.seed,
-            n_jobs=config.workers,
+            n_jobs=config.workers,  # Only 1 worker used if RNG is manually seeded
             verbose=config.verbose > 0,
         )
-        clusterer_args_used = clusterer_args_used.union(
-            {"distance_metric", "seed", "workers"}
-        )
+        clusterer_args_used = clusterer_args_used.union({"distance_metric", "seed"})
         embeddings = reducer_man.fit_transform(embeddings)
         end_reduce_man = time.time()
         results["time_reduce_man"] = end_reduce_man - start_reduce_man
