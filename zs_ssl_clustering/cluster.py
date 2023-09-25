@@ -86,6 +86,7 @@ def run(config):
     encoding_dim = embeddings.shape[-1]
 
     clusterer_args_used = set()
+    results = {}
 
     start_reducing = time.time()
     if config.dim_reducer == "None":
@@ -140,6 +141,7 @@ def run(config):
             print(
                 f"PCA Explained Variance: {np.sum(pca.explained_variance_ratio_)*100} %"
             )
+            results["pca_explained_ratio"] = np.sum(pca.explained_variance_ratio_)
         print(f"PCA Fitting time: {end_pca-start_pca:.2f}s")
     else:
         raise ValueError(
@@ -286,7 +288,7 @@ def run(config):
     n_clusters_pred = len(np.unique(y_pred[select_clustered]))
     ratio_clustered = np.sum(select_clustered) / len(y_pred)
     ratio_unclustered = 1 - ratio_clustered
-    results = {
+    _results = {
         "n_samples": len(embeddings),
         "encoding_dim": encoding_dim,
         "reduced_dim": reduced_dim,
@@ -307,6 +309,7 @@ def run(config):
             embeddings, y_true, metric="euclidean"
         ),
     }
+    results.update(_results)
     if config.distance_metric != "euclidean":
         results[f"silhouette-{config.distance_metric}_true"] = (
             sklearn.metrics.silhouette_score(
