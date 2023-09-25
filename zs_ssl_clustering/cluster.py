@@ -337,7 +337,7 @@ def run(config):
             embeddings, y_pred
         )
         results["DBS_pred"] = sklearn.metrics.davies_bouldin_score(embeddings, y_pred)
-        results["silhouette_pred"] = sklearn.metrics.silhouette_score(
+        results["silhouette-euclidean_pred"] = sklearn.metrics.silhouette_score(
             embeddings, y_pred, metric="euclidean"
         )
         if config.distance_metric not in ["euclidean", "infinity", "p"]:
@@ -365,9 +365,9 @@ def run(config):
         if n_clusters_pred > 1 and n_clusters_pred < len(ec):
             results["CHS_pred_clus"] = sklearn.metrics.calinski_harabasz_score(ec, ycp)
             results["DBS_pred_clus"] = sklearn.metrics.davies_bouldin_score(ec, ycp)
-            results["silhouette_pred_clus"] = sklearn.metrics.silhouette_score(
-                ec, ycp, metric="euclidean"
-            )
+            results[
+                "silhouette-euclidean_pred_clus"
+            ] = sklearn.metrics.silhouette_score(ec, ycp, metric="euclidean")
             if config.distance_metric not in ["euclidean", "infinity", "p"]:
                 try:
                     results[f"silhouette-{config.distance_metric}_pred_clus"] = (
