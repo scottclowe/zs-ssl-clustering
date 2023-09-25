@@ -301,8 +301,12 @@ def run(config):
     elif config.clusterer_name == "AgglomerativeClustering":
         # Can work with specified number of clusters, as well as unknown (which requires a distance threshold)
         # We can also impose some structure metric through the "connectivity" argument
+        if config.aggclust_dist_thresh is None:
+            n_clusters = n_clusters_gt
+        else:
+            n_clusters = None
         clusterer = sklearn.cluster.AgglomerativeClustering(
-            n_clusters=None,
+            n_clusters=n_clusters,
             metric=config.distance_metric,
             linkage=config.aggclust_linkage,
             distance_threshold=config.aggclust_dist_thresh,
@@ -680,8 +684,11 @@ def get_parser():
     group.add_argument(
         "--aggclust-dist-thresh",
         type=float,
-        default=1,
-        help="Distance threshold for agglomerative clustering method",
+        help=(
+            "Distance threshold for agglomerative clustering method. If unset,"
+            " the true number of clusters will be given to the clusterer"
+            " instead of using a distance threshold."
+        ),
     )
     group.add_argument(
         "--hdbscan-method",
