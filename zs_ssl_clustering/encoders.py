@@ -6,6 +6,8 @@ import torchvision
 from timm.data import resolve_data_config
 from torch import nn
 
+from zs_ssl_clustering.moco import moco
+
 
 def get_timm_encoder(model_name, pretrained=False, in_chans=3):
     r"""
@@ -121,6 +123,7 @@ class Barlow(nn.Module):
         super().__init__()
         model_name = model_name.replace("barlowtwins_", "")
         self.model = torch.hub.load("facebookresearch/barlowtwins:main", model_name)
+        self.model.fc = nn.Identity()
 
     def forward(self, x):
         return self.model(x)
@@ -160,6 +163,22 @@ class CLIP(nn.Module):
         return self.model.encode_image(x)
 
 
+class MOCO(nn.Module):
+    def __init__(self, model_name="resnet50"):
+        super().__init__()
+
+        model_name = model_name.replace("moco_", "")
+
+        self.model = moco.load_pretrained_model(model_name, "./pretrained")
+        if "vit" in model_name:
+            self.model.head = nn.Identity()
+        else:
+            self.model.fc = nn.Identity()
+
+    def forward(self, x):
+        return self.model(x)
+
+
 def get_encoder(model_name):
     if model_name.startswith("timm"):
         return TIMMEncoder(model_name)
@@ -184,6 +203,9 @@ def get_encoder(model_name):
 
     elif model_name.startswith("clip"):
         return CLIP(model_name)
+
+    elif model_name.startswith("moco"):
+        return MOCO(model_name)
 
     else:
         return TorchVisionEncoder(model_name)

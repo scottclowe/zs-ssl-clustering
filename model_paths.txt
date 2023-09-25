@@ -39,7 +39,7 @@ barlowtwins_resnet50
 VICReg - IM-1K:
 vicreg_resnet50
 vicreg_resnet50x2
-vicreg_resnet200x2 
+vicreg_resnet200x2
 
 VICRegL - IM-1K:
 vicregl_resnet50_alpha0p9
@@ -51,3 +51,8 @@ vicregl_convnext_base_alpha0p75
 
 VICRegL - IM-22k:
 vicregl_convnext_xlarge_alpha0p75
+
+MOCOv3 - IM-1K:
+moco_resnet50 (Download from https://dl.fbaipublicfiles.com/moco-v3/r-50-1000ep/r-50-1000ep.pth.tar)
+moco_vit_small (Download from https://dl.fbaipublicfiles.com/moco-v3/vit-s-300ep/vit-s-300ep.pth.tar)
+moco_vit_base (Download from https://dl.fbaipublicfiles.com/moco-v3/vit-b-300ep/vit-b-300ep.pth.tar)
