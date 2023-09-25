@@ -1,7 +1,7 @@
 import os
 
 import torch
-import torchvision.models as torchvision_models
+import torchvision.models
 
 from zs_ssl_clustering.moco import vits
 
@@ -17,7 +17,7 @@ def load_pretrained_model(model_name, pretrained_dir):
         model = vits.__dict__[model_name]()
         linear_keyword = "head"
     else:
-        model = torchvision_models.__dict__[model_name]()
+        model = torchvision.models.__dict__[model_name]()
         linear_keyword = "fc"
 
     weight_path = os.path.join(pretrained_dir, model_name_to_weights[model_name])
