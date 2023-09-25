@@ -163,11 +163,11 @@ class CLIP(nn.Module):
         return self.model.encode_image(x)
 
 
-class MOCO(nn.Module):
+class MoCoV3(nn.Module):
     def __init__(self, model_name="resnet50"):
         super().__init__()
 
-        model_name = model_name.replace("moco_", "")
+        model_name = model_name.replace("mocov3_", "")
 
         self.model = moco.load_pretrained_model(model_name, "./pretrained")
         if "vit" in model_name:
@@ -204,8 +204,8 @@ def get_encoder(model_name):
     elif model_name.startswith("clip"):
         return CLIP(model_name)
 
-    elif model_name.startswith("moco"):
-        return MOCO(model_name)
+    elif model_name.startswith("mocov3"):
+        return MoCoV3(model_name)
 
     else:
         return TorchVisionEncoder(model_name)
