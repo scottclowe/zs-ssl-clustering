@@ -328,7 +328,8 @@ def embed_dataset(dataloader, encoder, device, is_distributed=False, log_interva
         if is_distributed:
             # Fetch results from other GPUs
             embd = utils.concat_all_gather_ragged(embd)
-        print(embd.shape)
+        if i_batch == 0:
+            print(embd.shape)
         embeddings_list.append(embd.cpu().numpy())
         y_true_list.append(y_true.cpu().numpy())
 
