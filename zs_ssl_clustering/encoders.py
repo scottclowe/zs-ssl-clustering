@@ -163,7 +163,18 @@ class CLIP(nn.Module):
         import clip
 
         model_name = model_name.replace("clip_", "")
-
+        # Flexible handling of the format for model names
+        _model_name = model_name.lower().replace("-", "").replace("/", "")
+        if _model_name == "vitb16":
+            model_name = "ViT-B/16"
+        elif _model_name == "vitb32":
+            model_name = "ViT-B/32"
+        elif _model_name == "vitl14":
+            model_name = "ViT-L/14"
+        elif _model_name == "vitl14@336px":
+            model_name = "ViT-L/14@336px"
+        elif model_name:
+            model_name = model_name.replace("resnet", "RN")
         self.model, self.transform = clip.load(model_name)
 
     def forward(self, x):
