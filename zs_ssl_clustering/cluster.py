@@ -27,6 +27,7 @@ METRICS = [
     "canberra",  # Like L1, but weights dimensions by their magnitude
     "chebyshev",  # L-infinity
     "cityblock",  # L1
+    "cosine",  # Supported by AgglomerativeClustering and OPTICS
     "euclidean",  # L2
     "infinity",
     "l1",
