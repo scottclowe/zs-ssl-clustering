@@ -22,6 +22,7 @@ CLUSTERERS = [
 ]
 
 METRICS = [
+    "arccos",  # Manually implemented as unit length norm + euclidean distance
     "braycurtis",  # Like L1, but weights the result
     "canberra",  # Like L1, but weights dimensions by their magnitude
     "chebyshev",  # L-infinity
@@ -47,6 +48,11 @@ def run(config):
     if config.zscore is None:
         # If z-score was not specified, default to True if PCA is used, False otherwise.
         config.zscore = "PCA" in config.dim_reducer
+
+    # Handle arccos distance metric by normalizing the vectors ourself and
+    # passing euclidean to the clusterer, since it doesn't support arccos directly.
+    _distance_metric = config.distance_metric
+    _distance_metric = "euclidean" if _distance_metric == "arccos" else _distance_metric
 
     if config.log_wandb:
         # Lazy import of wandb, since logging to wandb is optional
@@ -183,6 +189,7 @@ def run(config):
     if config.dim_reducer_man is None or config.dim_reducer_man == "None":
         if config.log_wandb:
             wandb.config.update({"dim_reducer_man": None}, allow_val_change=True)
+        reducerman_args_used = set()
 
     elif config.dim_reducer_man == "UMAP":
         if config.ndim_reduced_man is None:
@@ -192,18 +199,22 @@ def run(config):
 
         import umap
 
+        _embeddings = embeddings
+        if config.distance_metric == "arccos":
+            _embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+
         start_reduce_man = time.time()
         reducer_man = umap.UMAP(
             n_neighbors=30,
             n_components=config.ndim_reduced_man,
             min_dist=0.0,
-            metric=config.distance_metric,
+            metric=_distance_metric,
             random_state=config.seed,
             n_jobs=config.workers,  # Only 1 worker used if RNG is manually seeded
             verbose=config.verbose > 0,
         )
-        clusterer_args_used = clusterer_args_used.union({"distance_metric", "seed"})
-        embeddings = reducer_man.fit_transform(embeddings)
+        reducerman_args_used = {"distance_metric", "seed"}
+        embeddings = reducer_man.fit_transform(_embeddings)
         end_reduce_man = time.time()
         results["time_reduce_man"] = end_reduce_man - start_reduce_man
         print(
@@ -216,19 +227,21 @@ def run(config):
                 f"{config.dim_reducer_man} reduction was requested, but 'ndim_reduced_man' was not set."
             )
 
+        _embeddings = embeddings
+        if config.distance_metric == "arccos":
+            _embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+
         start_reduce_man = time.time()
         reducer_man = sklearn.manifold.TSNE(
             n_components=config.ndim_reduced_man,
-            metric=config.distance_metric,
+            metric=_distance_metric,
             verbose=config.verbose,
             random_state=config.seed,
             method="exact",  # The default, "barnes_hut", only supports n_components<4
             n_jobs=config.workers,
         )
-        clusterer_args_used = clusterer_args_used.union(
-            {"distance_metric", "seed", "workers"}
-        )
-        embeddings = reducer_man.fit_transform(embeddings)
+        reducerman_args_used = {"distance_metric", "seed", "workers"}
+        embeddings = reducer_man.fit_transform(_embeddings)
         end_reduce_man = time.time()
         results["time_reduce_man"] = end_reduce_man - start_reduce_man
         print(
@@ -244,7 +257,7 @@ def run(config):
 
     # TODO: Maybe do before PCA?
     if config.normalize:
-        embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+        embeddings /= np.linalg.norm(embeddings, axis=1, keepdims=True)
 
     reduced_dim = embeddings.shape[-1]
 
@@ -312,7 +325,7 @@ def run(config):
             n_clusters = None
         clusterer = sklearn.cluster.AgglomerativeClustering(
             n_clusters=n_clusters,
-            metric=config.distance_metric,
+            metric=_distance_metric,
             linkage=config.aggclust_linkage,
             distance_threshold=config.aggclust_dist_thresh,
         )
@@ -327,7 +340,7 @@ def run(config):
     elif config.clusterer_name == "HDBSCAN":
         clusterer = sklearn.cluster.HDBSCAN(
             min_cluster_size=config.min_samples,
-            metric=config.distance_metric,
+            metric=_distance_metric,
             cluster_selection_method=config.hdbscan_method,
             n_jobs=config.workers,
         )
@@ -343,7 +356,7 @@ def run(config):
     elif config.clusterer_name == "OPTICS":
         clusterer = sklearn.cluster.OPTICS(
             min_samples=config.min_samples,
-            metric=config.distance_metric,
+            metric=_distance_metric,
             cluster_method=config.optics_method,
             xi=config.optics_xi,
             n_jobs=config.workers,
@@ -364,7 +377,8 @@ def run(config):
 
     # Wipe the state of cluster arguments that were not relevant to the
     # chosen clusterer.
-    clusterer_args_unused = clusterer_args.difference(clusterer_args_used)
+    clusterer_args_unused = clusterer_args.difference(reducerman_args_used)
+    clusterer_args_unused = clusterer_args_unused.difference(clusterer_args_used)
     for key in clusterer_args_unused:
         if key == "distance_metric":
             continue
@@ -376,8 +390,16 @@ def run(config):
             {"workers": utils.get_num_cpu_available()}, allow_val_change=True
         )
 
+    _embeddings = embeddings
+    if (
+        config.distance_metric == "arccos"
+        and "distance_metric" in clusterer_args_used
+        and not config.normalize
+    ):
+        _embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+
     start_cluster = time.time()
-    clusterer.fit(embeddings)
+    clusterer.fit(_embeddings)
     end_cluster = time.time()
 
     y_pred = clusterer.labels_
@@ -407,7 +429,15 @@ def run(config):
         ),
     }
     results.update(_results)
-    if config.distance_metric not in ["euclidean", "infinity", "p"]:
+
+    if (
+        config.distance_metric == "arccos"
+        and "distance_metric" not in clusterer_args_used
+        and not config.normalize
+    ):
+        _embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+
+    if config.distance_metric not in ["euclidean", "infinity", "p", "arccos"]:
         try:
             results[
                 f"silhouette-{config.distance_metric}_true"
@@ -416,6 +446,10 @@ def run(config):
             )
         except Exception as err:
             print(f"Error computing silhouette-{config.distance_metric}_true: {err}")
+    if config.distance_metric == "arccos":
+        results[
+            f"silhouette-{config.distance_metric}_true"
+        ] = sklearn.metrics.silhouette_score(_embeddings, y_true, metric="euclidean")
 
     if n_clusters_pred > 1 and len(np.unique(y_pred)) < len(embeddings):
         results["CHS_pred"] = sklearn.metrics.calinski_harabasz_score(
@@ -425,7 +459,7 @@ def run(config):
         results["silhouette-euclidean_pred"] = sklearn.metrics.silhouette_score(
             embeddings, y_pred, metric="euclidean"
         )
-        if config.distance_metric not in ["euclidean", "infinity", "p"]:
+        if config.distance_metric not in ["euclidean", "infinity", "p", "arccos"]:
             try:
                 results[
                     f"silhouette-{config.distance_metric}_pred"
@@ -436,6 +470,12 @@ def run(config):
                 print(
                     f"Error computing silhouette-{config.distance_metric}_pred: {err}"
                 )
+        if config.distance_metric == "arccos":
+            results[
+                f"silhouette-{config.distance_metric}_pred"
+            ] = sklearn.metrics.silhouette_score(
+                _embeddings, y_pred, metric="euclidean"
+            )
 
     # Repeat metrics, but considering only the samples that were clustered
     if ratio_clustered > 0:
@@ -453,7 +493,7 @@ def run(config):
             results[
                 "silhouette-euclidean_pred_clus"
             ] = sklearn.metrics.silhouette_score(ec, ycp, metric="euclidean")
-            if config.distance_metric not in ["euclidean", "infinity", "p"]:
+            if config.distance_metric not in ["euclidean", "infinity", "p", "arccos"]:
                 try:
                     results[
                         f"silhouette-{config.distance_metric}_pred_clus"
@@ -464,6 +504,12 @@ def run(config):
                     print(
                         f"Error computing silhouette-{config.distance_metric}_pred_clus: {err}"
                     )
+            if config.distance_metric == "arccos":
+                results[
+                    f"silhouette-{config.distance_metric}_pred_clus"
+                ] = sklearn.metrics.silhouette_score(
+                    _embeddings[select_clustered], ycp, metric="euclidean"
+                )
 
     # Now that we've handled computing silhouette_score with a custom distance
     # metric if specified, we can wipe the state of the distance_metric if it
