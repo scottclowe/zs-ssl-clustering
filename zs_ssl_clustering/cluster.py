@@ -22,19 +22,19 @@ CLUSTERERS = [
 ]
 
 METRICS = [
-    "braycurtis",
-    "canberra",
-    "chebyshev",
-    "cityblock",
-    "euclidean",
+    "braycurtis",  # Like L1, but weights the result
+    "canberra",  # Like L1, but weights dimensions by their magnitude
+    "chebyshev",  # L-infinity
+    "cityblock",  # L1
+    "euclidean",  # L2
     "infinity",
     "l1",
     "l2",
     "mahalanobis",  # Must provide either V or VI in ``metric_params``.
-    "manhattan",
-    "minkowski",  # Must provide a p value in ``p`` or ``metric_params``.
+    "manhattan",  # L1
+    "minkowski",  # Lp norm, Must provide a p value in ``p`` or ``metric_params``.
     "p",
-    "seuclidean",  # Needs an argument array ``V`` with variances for each coordinate.
+    "seuclidean",  # Weighted L2. Needs an argument ``V`` with variances per dim.
 ]
 
 
