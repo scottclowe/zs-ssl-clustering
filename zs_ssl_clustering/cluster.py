@@ -108,9 +108,7 @@ def run(config):
 
     if config.dim_reducer is None or config.dim_reducer == "None":
         if config.log_wandb:
-            wandb.config.update(
-                {"dim_reducer": None, "pca_kernel": None}, allow_val_change=True
-            )
+            wandb.config.update({"pca_kernel": None}, allow_val_change=True)
     elif "PCA" in config.dim_reducer:
         use_kernel_PCA = config.dim_reducer == "KernelPCA"
         if not use_kernel_PCA:
@@ -188,8 +186,6 @@ def run(config):
         )
 
     if config.dim_reducer_man is None or config.dim_reducer_man == "None":
-        if config.log_wandb:
-            wandb.config.update({"dim_reducer_man": None}, allow_val_change=True)
         reducerman_args_used = set()
 
     elif config.dim_reducer_man == "UMAP":
