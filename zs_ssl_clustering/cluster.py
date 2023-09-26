@@ -255,10 +255,6 @@ def run(config):
 
     end_reducing = time.time()
 
-    # TODO: Maybe do before PCA?
-    if config.normalize:
-        embeddings /= np.linalg.norm(embeddings, axis=1, keepdims=True)
-
     reduced_dim = embeddings.shape[-1]
 
     clusterer_args = {
@@ -401,6 +397,9 @@ def run(config):
         wandb.config.update(
             {"workers": utils.get_num_cpu_available()}, allow_val_change=True
         )
+
+    if config.normalize:
+        embeddings /= np.linalg.norm(embeddings, axis=1, keepdims=True)
 
     _embeddings = embeddings
     if (
