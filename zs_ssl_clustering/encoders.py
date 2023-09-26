@@ -75,7 +75,7 @@ class TorchVisionEncoder(nn.Module):
         return self.model(x)
 
 
-class TIMMEncoder(nn.Module):
+class TimmEncoder(nn.Module):
     def __init__(self, model_name="resnet50"):
         super().__init__()
         model_name = model_name.replace("timm_", "")
@@ -118,7 +118,7 @@ class SWAV(nn.Module):
         return self.model(x)
 
 
-class Barlow(nn.Module):
+class BarlowTwins(nn.Module):
     def __init__(self, model_name="resnet50"):
         super().__init__()
         model_name = model_name.replace("barlowtwins_", "")
@@ -181,7 +181,7 @@ class MoCoV3(nn.Module):
 
 def get_encoder(model_name):
     if model_name.startswith("timm"):
-        return TIMMEncoder(model_name)
+        return TimmEncoder(model_name)
 
     elif model_name.startswith("dinov2"):
         return DINOv2(model_name)
@@ -190,7 +190,7 @@ def get_encoder(model_name):
         return DINOv1(model_name)
 
     elif model_name.startswith("barlowtwins"):
-        return Barlow(model_name)
+        return BarlowTwins(model_name)
 
     elif model_name.startswith("swav"):
         return SWAV(model_name)
