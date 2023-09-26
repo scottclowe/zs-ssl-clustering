@@ -68,13 +68,15 @@ class TorchVisionEncoder(nn.Module):
                 weights=torchvision.models.ResNet50_Weights.IMAGENET1K_V2
             )
         elif model_name in ["vit_b_16", "vitb16"]:
-            torchvision.models.vit_b_16(
+            self.model = torchvision.models.vit_b_16(
                 weights=torchvision.models.ViT_B_16_Weights.IMAGENET1K_V1,
             )
         else:
             raise ValueError(f"Unrecognized model: '{model_name}'.")
         if "resnet" in model_name:
             self.model.fc = nn.Identity()
+        elif "vit" in model_name:
+            self.model.heads = nn.Identity()
 
     def forward(self, x):
         return self.model(x)
