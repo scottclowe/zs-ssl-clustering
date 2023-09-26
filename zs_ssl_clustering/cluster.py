@@ -303,6 +303,8 @@ def run(config):
                 "affinity_conv_iter",
             }
         )
+        if config.distance_metric == "arccos":
+            clusterer_args_used.add("distance_metric")
 
     elif config.clusterer_name == "SpectralClustering":
         # TODO Look into this:
