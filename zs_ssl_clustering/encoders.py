@@ -97,7 +97,7 @@ class DINOv2(nn.Module):
 
 
 class DINOv1(nn.Module):
-    def __init__(self, model_name="vits16"):
+    def __init__(self, model_name="resnet50"):
         super().__init__()
         if "dino_" not in model_name:
             model_name = "dino_" + model_name
@@ -150,7 +150,7 @@ class VICRegL(nn.Module):
 
 
 class CLIP(nn.Module):
-    def __init__(self, model_name="ViT-B/32"):
+    def __init__(self, model_name="RN50"):
         super().__init__()
 
         import clip
