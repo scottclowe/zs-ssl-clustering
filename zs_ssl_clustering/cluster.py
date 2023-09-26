@@ -44,6 +44,10 @@ def run(config):
     print(config)
     print(flush=True)
 
+    if config.zscore is None:
+        # If z-score was not specified, default to True if PCA is used, False otherwise.
+        config.zscore = "PCA" in config.dim_reducer
+
     if config.log_wandb:
         # Lazy import of wandb, since logging to wandb is optional
         import wandb
@@ -90,6 +94,11 @@ def run(config):
     results = {}
 
     start_reducing = time.time()
+    if config.zscore:
+        # Standardize to zero mean, unit variance
+        embeddings -= np.mean(embeddings, axis=0)
+        embeddings /= np.std(embeddings, axis=0)
+
     if config.dim_reducer is None or config.dim_reducer == "None":
         if config.log_wandb:
             wandb.config.update(
@@ -138,10 +147,6 @@ def run(config):
                 f"Unrecognized value for 'ndim_reduced': '{ndim_reduced}'."
                 " Should be 'mle' or an integer value."
             )
-
-        # Standardize to zero mean, unit variance
-        embeddings -= np.mean(embeddings, axis=0)
-        embeddings /= np.std(embeddings, axis=0)
 
         start_pca = time.time()
         if use_kernel_PCA:
@@ -622,6 +627,24 @@ def get_parser():
 
     # Normalization Args
     group = parser.add_argument_group("Normalization")
+    mx_group = group.add_mutually_exclusive_group()
+    mx_group.add_argument(
+        "--zscore",
+        dest="zscore",
+        action="store_true",
+        default=None,
+        help=(
+            "Standardize with the z-score of each dimension (applied before reduction)."
+            " Default: True if using PCA, False otherwise."
+        ),
+    )
+    mx_group.add_argument(
+        "--no-zscore",
+        dest="zscore",
+        action="store_false",
+        default=None,
+        help="Don't standardize data as the z-score of each dimension before PCA.",
+    )
     group.add_argument(
         "--normalize",
         action="store_true",
