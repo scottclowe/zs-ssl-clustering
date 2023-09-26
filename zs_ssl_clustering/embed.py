@@ -197,6 +197,7 @@ def run_one_worker(gpu, ngpus_per_node, config):
         config.zoom_ratio,
         image_size=config.image_size,
         image_channels=img_channels,
+        norm_type="clip" if config.model.startswith("clip") else "imagenet",
     )
 
     # Dataset -----------------------------------------------------------------
