@@ -732,7 +732,7 @@ def get_parser():
     group.add_argument(
         "--min-samples",
         type=int,
-        default=2,
+        default=5,
         help="Minimum number of samples to comprise a cluster. Default: %(default)s",
     )
     group.add_argument(
