@@ -265,6 +265,7 @@ def run(config):
         "distance_metric",
         "max_iter",
         "min_samples",
+        "max_samples",
         "workers",
         "affinity_damping",
         "affinity_conv_iter",
@@ -338,8 +339,16 @@ def run(config):
         )
 
     elif config.clusterer_name == "HDBSCAN":
+        max_cluster_size = config.max_samples
+        if max_cluster_size is None:
+            pass
+        elif max_cluster_size < 1.0:
+            max_cluster_size = round(max_cluster_size * len(embeddings))
+        else:
+            max_cluster_size = int(max_cluster_size)
         clusterer = sklearn.cluster.HDBSCAN(
             min_cluster_size=config.min_samples,
+            max_cluster_size=max_cluster_size,
             metric=_distance_metric,
             cluster_selection_method=config.hdbscan_method,
             n_jobs=config.workers,
@@ -347,6 +356,7 @@ def run(config):
         clusterer_args_used = clusterer_args_used.union(
             {
                 "min_samples",
+                "max_samples",
                 "distance_metric",
                 "hdbscan_method",
                 "workers",
@@ -724,6 +734,16 @@ def get_parser():
         type=int,
         default=2,
         help="Minimum number of samples to comprise a cluster. Default: %(default)s",
+    )
+    group.add_argument(
+        "--max-samples",
+        type=float,
+        help=(
+            "HDBSCAN's maximum number of samples to comprise a cluster. This can be"
+            " either an integer >= 2 (the maximum number of samples per cluster), or a"
+            " float 0 < MAX_SAMPLES < 1, in which case this is the maximum fraction of"
+            " the dataset that can be in a single cluster. Default: infinity."
+        ),
     )
     group.add_argument(
         "--affinity-damping",
