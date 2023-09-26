@@ -55,6 +55,11 @@ def run(config):
     _distance_metric = config.distance_metric
     _distance_metric = "euclidean" if _distance_metric == "arccos" else _distance_metric
 
+    _distance_metric_man = config.dim_reducer_man_metric
+    _distance_metric_man = (
+        "euclidean" if _distance_metric_man == "arccos" else _distance_metric_man
+    )
+
     if config.log_wandb:
         # Lazy import of wandb, since logging to wandb is optional
         import wandb
@@ -186,6 +191,8 @@ def run(config):
         )
 
     if config.dim_reducer_man is None or config.dim_reducer_man == "None":
+        if config.log_wandb:
+            wandb.config.update({"dim_reducer_man_metric": None}, allow_val_change=True)
         reducerman_args_used = set()
 
     elif config.dim_reducer_man == "UMAP":
@@ -197,7 +204,7 @@ def run(config):
         import umap
 
         _embeddings = embeddings
-        if config.distance_metric == "arccos":
+        if config.dim_reducer_man_metric == "arccos":
             _embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
 
         start_reduce_man = time.time()
@@ -205,12 +212,12 @@ def run(config):
             n_neighbors=30,
             n_components=config.ndim_reduced_man,
             min_dist=0.0,
-            metric=_distance_metric,
+            metric=_distance_metric_man,
             random_state=config.seed,
             n_jobs=config.workers,  # Only 1 worker used if RNG is manually seeded
             verbose=config.verbose > 0,
         )
-        reducerman_args_used = {"distance_metric", "seed"}
+        reducerman_args_used = {"dim_reducer_man_metric", "seed"}
         embeddings = reducer_man.fit_transform(_embeddings)
         end_reduce_man = time.time()
         results["time_reduce_man"] = end_reduce_man - start_reduce_man
@@ -225,19 +232,19 @@ def run(config):
             )
 
         _embeddings = embeddings
-        if config.distance_metric == "arccos":
+        if config.dim_reducer_man_metric == "arccos":
             _embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
 
         start_reduce_man = time.time()
         reducer_man = sklearn.manifold.TSNE(
             n_components=config.ndim_reduced_man,
-            metric=_distance_metric,
+            metric=_distance_metric_man,
             verbose=config.verbose,
             random_state=config.seed,
             method="exact",  # The default, "barnes_hut", only supports n_components<4
             n_jobs=config.workers,
         )
-        reducerman_args_used = {"distance_metric", "seed", "workers"}
+        reducerman_args_used = {"dim_reducer_man_metric", "seed", "workers"}
         embeddings = reducer_man.fit_transform(_embeddings)
         end_reduce_man = time.time()
         results["time_reduce_man"] = end_reduce_man - start_reduce_man
@@ -675,6 +682,13 @@ def get_parser():
         type=int,
         default=None,
         help="Number of dimensions to reduce the embeddings to.",
+    )
+    group.add_argument(
+        "--dim-reducer-man-metric",
+        type=str,
+        default="euclidean",
+        choices=METRICS,
+        help="Distance metric for manifold dimensionality reduction. Default: %(default)s",
     )
 
     # TODO Add arguments for Kernel PCA kernels
