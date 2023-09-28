@@ -269,6 +269,7 @@ def run(config):
         "workers",
         "affinity_damping",
         "affinity_conv_iter",
+        "spectral_assigner",
         "aggclust_linkage",
         "aggclust_dist_thresh",
         "hdbscan_method",
@@ -318,7 +319,7 @@ def run(config):
             random_state=config.seed,
             verbose=config.verbose > 0,
         )
-        clusterer_args_used = clusterer_args_used.union({"seed"})
+        clusterer_args_used = clusterer_args_used.union({"seed", "spectral_assigner"})
 
     elif config.clusterer_name == "AgglomerativeClustering":
         # Can work with specified number of clusters, as well as unknown (which requires a distance threshold)
