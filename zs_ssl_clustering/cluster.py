@@ -115,7 +115,10 @@ def run(config):
     if config.zscore:
         # Standardize to zero mean, unit variance
         embeddings -= np.mean(embeddings, axis=0)
-        embeddings /= np.std(embeddings, axis=0)
+        sigma = np.std(embeddings, axis=0)
+        embeddings /= sigma
+        # Handle the case where a dimension has zero variance
+        embeddings[:, sigma == 0] = 0
 
     if config.dim_reducer is None or config.dim_reducer == "None":
         if config.log_wandb:
