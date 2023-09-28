@@ -23,6 +23,7 @@ echo "SLURM_TASKS_PER_NODE    = $SLURM_TASKS_PER_NODE"      # Number of tasks to
 echo "SLURM_NTASKS            = $SLURM_NTASKS"              # Number of tasks to spawn.
 echo "SLURM_PROCID            = $SLURM_PROCID"              # The MPI rank (or relative process ID) of the current process
 echo ""
+echo "SLURM_MEM_PER_NODE      = $SLURM_MEM_PER_NODE"        # Memory per node in MB. Same as --mem.
 echo "SLURM_GPUS_ON_NODE      = $SLURM_GPUS_ON_NODE"        # Number of allocated GPUs per node.
 echo "SLURM_CPUS_ON_NODE      = $SLURM_CPUS_ON_NODE"        # Number of allocated CPUs per node.
 echo "SLURM_CPUS_PER_GPU      = $SLURM_CPUS_PER_GPU"        # Number of CPUs requested per GPU. Only set if the --cpus-per-gpu option is specified.
