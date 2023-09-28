@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import random
 import time
 from datetime import datetime
 
@@ -45,6 +46,11 @@ def run(config):
     print()
     print(config)
     print(flush=True)
+
+    if config.seed is not None:
+        # Seed RNG state for reproducibility
+        random.seed(config.seed)
+        np.random.seed(config.seed % 0xFFFF_FFFF)
 
     if config.zscore is None:
         # If z-score was not specified, default to True if PCA is used, False otherwise.
