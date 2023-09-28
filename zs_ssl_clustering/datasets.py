@@ -122,7 +122,7 @@ def image_dataset_sizes(dataset):
         img_size = None
         num_channels = 3
 
-    elif dataset == ["inaturalist", "inaturalist-mini"]:
+    elif dataset in ["inaturalist", "inaturalist-mini"]:
         num_classes = 10000
         img_size = None
         num_channels = 3
