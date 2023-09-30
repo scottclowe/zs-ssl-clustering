@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import copy
 import os
 import random
 import time
@@ -56,6 +57,11 @@ def run(config):
         # If z-score was not specified, default to True if PCA is used, False otherwise.
         config.zscore = "PCA" in config.dim_reducer
 
+    if config.distance_metric == "arccos":
+        # If arccos distance metric is used, we need to normalize the vectors
+        # to unit length.
+        config.normalize = True
+
     # Handle arccos distance metric by normalizing the vectors ourself and
     # passing euclidean to the clusterer, since it doesn't support arccos directly.
     _distance_metric = config.distance_metric
@@ -107,6 +113,8 @@ def run(config):
     y_true = data["y_true"]
     n_clusters_gt = len(np.unique(y_true))
     encoding_dim = embeddings.shape[-1]
+
+    og_embeddings = copy.deepcopy(embeddings)
 
     clusterer_args_used = set()
     results = {}
@@ -286,6 +294,9 @@ def run(config):
         "optics_xi",
     }
 
+    if config.distance_metric == "arccos":
+        clusterer_args_used.add("distance_metric")
+
     if config.clusterer_name == "KMeans":
         clusterer = sklearn.cluster.KMeans(
             n_clusters=n_clusters_gt,
@@ -313,8 +324,6 @@ def run(config):
                 "affinity_conv_iter",
             }
         )
-        if config.distance_metric == "arccos":
-            clusterer_args_used.add("distance_metric")
 
     elif config.clusterer_name == "SpectralClustering":
         # TODO Look into this:
@@ -398,13 +407,15 @@ def run(config):
     else:
         raise ValueError(f"Unrecognized clusterer: '{config.clusterer_name}'")
 
+    _embeddings = embeddings
+    if config.normalize or config.distance_metric == "arccos":
+        _embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+
     # Wipe the state of cluster arguments that were not relevant to the
     # chosen clusterer.
     clusterer_args_unused = clusterer_args.difference(reducerman_args_used)
     clusterer_args_unused = clusterer_args_unused.difference(clusterer_args_used)
     for key in clusterer_args_unused:
-        if key == "distance_metric":
-            continue
         setattr(config, key, None)
         if config.log_wandb:
             wandb.config.update({key: None}, allow_val_change=True)
@@ -412,17 +423,6 @@ def run(config):
         wandb.config.update(
             {"workers": utils.get_num_cpu_available()}, allow_val_change=True
         )
-
-    if config.normalize:
-        embeddings /= np.linalg.norm(embeddings, axis=1, keepdims=True)
-
-    _embeddings = embeddings
-    if (
-        config.distance_metric == "arccos"
-        and "distance_metric" in clusterer_args_used
-        and not config.normalize
-    ):
-        _embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
 
     start_cluster = time.time()
     clusterer.fit(_embeddings)
@@ -449,59 +449,23 @@ def run(config):
         "completeness": sklearn.metrics.completeness_score(y_true, y_pred),
         "homogeneity": sklearn.metrics.homogeneity_score(y_true, y_pred),
         "CHS_true": sklearn.metrics.calinski_harabasz_score(embeddings, y_true),
+        "CHS-og_true": sklearn.metrics.calinski_harabasz_score(og_embeddings, y_true),
         "DBS_true": sklearn.metrics.davies_bouldin_score(embeddings, y_true),
-        "silhouette-euclidean_true": sklearn.metrics.silhouette_score(
-            embeddings, y_true, metric="euclidean"
-        ),
+        "DBS-og_true": sklearn.metrics.davies_bouldin_score(og_embeddings, y_true),
     }
     results.update(_results)
-
-    if (
-        config.distance_metric == "arccos"
-        and "distance_metric" not in clusterer_args_used
-        and not config.normalize
-    ):
-        _embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
-
-    if config.distance_metric not in ["euclidean", "infinity", "p", "arccos"]:
-        try:
-            results[
-                f"silhouette-{config.distance_metric}_true"
-            ] = sklearn.metrics.silhouette_score(
-                embeddings, y_true, metric=config.distance_metric
-            )
-        except Exception as err:
-            print(f"Error computing silhouette-{config.distance_metric}_true: {err}")
-    if config.distance_metric == "arccos":
-        results[
-            f"silhouette-{config.distance_metric}_true"
-        ] = sklearn.metrics.silhouette_score(_embeddings, y_true, metric="euclidean")
 
     if n_clusters_pred > 1 and len(np.unique(y_pred)) < len(embeddings):
         results["CHS_pred"] = sklearn.metrics.calinski_harabasz_score(
             embeddings, y_pred
         )
-        results["DBS_pred"] = sklearn.metrics.davies_bouldin_score(embeddings, y_pred)
-        results["silhouette-euclidean_pred"] = sklearn.metrics.silhouette_score(
-            embeddings, y_pred, metric="euclidean"
+        results["CHS-og_pred"] = sklearn.metrics.calinski_harabasz_score(
+            og_embeddings, y_pred
         )
-        if config.distance_metric not in ["euclidean", "infinity", "p", "arccos"]:
-            try:
-                results[
-                    f"silhouette-{config.distance_metric}_pred"
-                ] = sklearn.metrics.silhouette_score(
-                    embeddings, y_pred, metric=config.distance_metric
-                )
-            except Exception as err:
-                print(
-                    f"Error computing silhouette-{config.distance_metric}_pred: {err}"
-                )
-        if config.distance_metric == "arccos":
-            results[
-                f"silhouette-{config.distance_metric}_pred"
-            ] = sklearn.metrics.silhouette_score(
-                _embeddings, y_pred, metric="euclidean"
-            )
+        results["DBS_pred"] = sklearn.metrics.davies_bouldin_score(embeddings, y_pred)
+        results["DBS-og_pred"] = sklearn.metrics.davies_bouldin_score(
+            og_embeddings, y_pred
+        )
 
     # Repeat metrics, but considering only the samples that were clustered
     if ratio_clustered > 0:
@@ -515,34 +479,69 @@ def run(config):
         results["homogeneity_clus"] = sklearn.metrics.homogeneity_score(yct, ycp)
         if n_clusters_pred > 1 and n_clusters_pred < len(ec):
             results["CHS_pred_clus"] = sklearn.metrics.calinski_harabasz_score(ec, ycp)
+            results["CHS-og_pred_clus"] = sklearn.metrics.calinski_harabasz_score(
+                og_embeddings[select_clustered], ycp
+            )
             results["DBS_pred_clus"] = sklearn.metrics.davies_bouldin_score(ec, ycp)
-            results[
-                "silhouette-euclidean_pred_clus"
-            ] = sklearn.metrics.silhouette_score(ec, ycp, metric="euclidean")
-            if config.distance_metric not in ["euclidean", "infinity", "p", "arccos"]:
+            results["DBS-og_pred_clus"] = sklearn.metrics.davies_bouldin_score(
+                og_embeddings[select_clustered], ycp
+            )
+
+    # Compute silhouette scores with several distance metrics
+    for dm in ["euclidean", "l1", "chebyshev", "arccos", "braycurtis", "canberra"]:
+        for space_name, embs in [("reduced", embeddings), ("og", og_embeddings)]:
+            if space_name == "reduced":
+                prefix = f"silhouette-{dm}"
+            else:
+                prefix = f"silhouette-{space_name}-{dm}"
+            my_dstmtr = dm
+            my_embs = embs
+            if dm == "arccos":
+                my_dstmtr = "euclidean"
+                my_embs = embs / np.linalg.norm(embs, axis=1, keepdims=True)
+
+            # Compute metrics on ground-truth clusters
+            try:
+                results[f"{prefix}_true"] = sklearn.metrics.silhouette_score(
+                    my_embs, y_true, metric=my_dstmtr
+                )
+            except Exception as err:
+                print(f"Error computing GT silhouette score with {dm}: {err}")
+
+            # Compute metrics on ground-truth clusters, but considering only the
+            # samples that were clustered
+            if ratio_clustered > 0:
                 try:
-                    results[
-                        f"silhouette-{config.distance_metric}_pred_clus"
-                    ] = sklearn.metrics.silhouette_score(
-                        ec, ycp, metric=config.distance_metric
+                    results[f"{prefix}_true_clus"] = sklearn.metrics.silhouette_score(
+                        my_embs[select_clustered], yct, metric=my_dstmtr
                     )
                 except Exception as err:
-                    print(
-                        f"Error computing silhouette-{config.distance_metric}_pred_clus: {err}"
-                    )
-            if config.distance_metric == "arccos":
-                results[
-                    f"silhouette-{config.distance_metric}_pred_clus"
-                ] = sklearn.metrics.silhouette_score(
-                    _embeddings[select_clustered], ycp, metric="euclidean"
+                    print(f"Error computing pred silhouette score with {dm}: {err}")
+
+            # Compute metrics on predicted clusters
+            if n_clusters_pred <= 1 or len(np.unique(y_pred)) == len(embeddings):
+                continue
+            try:
+                results[f"{prefix}_pred"] = sklearn.metrics.silhouette_score(
+                    my_embs, y_pred, metric=my_dstmtr
+                )
+            except Exception as err:
+                print(
+                    f"Error computing GT (clustered samples only) silhouette score with {dm}: {err}"
                 )
 
-    # Now that we've handled computing silhouette_score with a custom distance
-    # metric if specified, we can wipe the state of the distance_metric if it
-    # was not used by the clusterer to show it was not relevant.
-    key = "distance_metric"
-    if key in clusterer_args_unused and config.log_wandb:
-        wandb.config.update({key: None}, allow_val_change=True)
+            # Compute metrics on predicted clusters, but considering only the
+            # samples that were clustered
+            if ratio_clustered <= 0 or n_clusters_pred >= len(ec):
+                continue
+            try:
+                results[f"{prefix}_pred_clus"] = sklearn.metrics.silhouette_score(
+                    my_embs[select_clustered], ycp, metric=my_dstmtr
+                )
+            except Exception as err:
+                print(
+                    f"Error computing pred (clustered samples only) silhouette score with {dm}: {err}"
+                )
 
     if hasattr(clusterer, "n_iter_"):
         results["iter"] = clusterer.n_iter_  # Number of iterations run.
