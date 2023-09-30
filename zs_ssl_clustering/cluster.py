@@ -407,9 +407,10 @@ def run(config):
     else:
         raise ValueError(f"Unrecognized clusterer: '{config.clusterer_name}'")
 
+    nrm_embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
     _embeddings = embeddings
     if config.normalize or config.distance_metric == "arccos":
-        _embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+        _embeddings = nrm_embeddings
 
     # Wipe the state of cluster arguments that were not relevant to the
     # chosen clusterer.
@@ -449,8 +450,10 @@ def run(config):
         "completeness": sklearn.metrics.completeness_score(y_true, y_pred),
         "homogeneity": sklearn.metrics.homogeneity_score(y_true, y_pred),
         "CHS_true": sklearn.metrics.calinski_harabasz_score(embeddings, y_true),
+        "CHS-nrm_true": sklearn.metrics.calinski_harabasz_score(nrm_embeddings, y_true),
         "CHS-og_true": sklearn.metrics.calinski_harabasz_score(og_embeddings, y_true),
         "DBS_true": sklearn.metrics.davies_bouldin_score(embeddings, y_true),
+        "DBS-nrm_true": sklearn.metrics.davies_bouldin_score(nrm_embeddings, y_true),
         "DBS-og_true": sklearn.metrics.davies_bouldin_score(og_embeddings, y_true),
     }
     results.update(_results)
@@ -459,10 +462,16 @@ def run(config):
         results["CHS_pred"] = sklearn.metrics.calinski_harabasz_score(
             embeddings, y_pred
         )
+        results["CHS-nrm_pred"] = sklearn.metrics.calinski_harabasz_score(
+            nrm_embeddings, y_pred
+        )
         results["CHS-og_pred"] = sklearn.metrics.calinski_harabasz_score(
             og_embeddings, y_pred
         )
         results["DBS_pred"] = sklearn.metrics.davies_bouldin_score(embeddings, y_pred)
+        results["DBS-nrm_pred"] = sklearn.metrics.davies_bouldin_score(
+            nrm_embeddings, y_pred
+        )
         results["DBS-og_pred"] = sklearn.metrics.davies_bouldin_score(
             og_embeddings, y_pred
         )
@@ -479,17 +488,27 @@ def run(config):
         results["homogeneity_clus"] = sklearn.metrics.homogeneity_score(yct, ycp)
         if n_clusters_pred > 1 and n_clusters_pred < len(ec):
             results["CHS_pred_clus"] = sklearn.metrics.calinski_harabasz_score(ec, ycp)
+            results["CHS-nrm_pred_clus"] = sklearn.metrics.calinski_harabasz_score(
+                nrm_embeddings[select_clustered], ycp
+            )
             results["CHS-og_pred_clus"] = sklearn.metrics.calinski_harabasz_score(
                 og_embeddings[select_clustered], ycp
             )
             results["DBS_pred_clus"] = sklearn.metrics.davies_bouldin_score(ec, ycp)
+            results["DBS-nrm_pred_clus"] = sklearn.metrics.davies_bouldin_score(
+                nrm_embeddings[select_clustered], ycp
+            )
             results["DBS-og_pred_clus"] = sklearn.metrics.davies_bouldin_score(
                 og_embeddings[select_clustered], ycp
             )
 
     # Compute silhouette scores with several distance metrics
     for dm in ["euclidean", "l1", "chebyshev", "arccos", "braycurtis", "canberra"]:
-        for space_name, embs in [("reduced", embeddings), ("og", og_embeddings)]:
+        for space_name, embs in [
+            ("reduced", embeddings),
+            ("nrm", nrm_embeddings),
+            ("og", og_embeddings),
+        ]:
             if space_name == "reduced":
                 prefix = f"silhouette-{dm}"
             else:
