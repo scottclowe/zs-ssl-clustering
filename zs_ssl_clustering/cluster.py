@@ -463,6 +463,11 @@ def run(config):
     n_clusters_pred = len(np.unique(y_pred[select_clustered]))
     ratio_clustered = np.sum(select_clustered) / len(y_pred)
     ratio_unclustered = 1 - ratio_clustered
+
+    # Load raw (flattened only) images for computing intrinsic metrics
+    raw_data = np.load(io.get_embeddings_path(config), raw=True)
+    raw_images = raw_data["embeddings"]
+
     _results = {
         "n_samples": len(embeddings),
         "encoding_dim": encoding_dim,
@@ -486,6 +491,7 @@ def run(config):
             nrm_zs2_embeddings, y_true
         ),
         "CHS-og_true": sklearn.metrics.calinski_harabasz_score(og_embeddings, y_true),
+        "CHS-pix_true": sklearn.metrics.calinski_harabasz_score(raw_images, y_true),
         "DBS_true": sklearn.metrics.davies_bouldin_score(embeddings, y_true),
         "DBS-nrm_true": sklearn.metrics.davies_bouldin_score(nrm_embeddings, y_true),
         "DBS-zs2_true": sklearn.metrics.davies_bouldin_score(zs2_embeddings, y_true),
@@ -493,6 +499,7 @@ def run(config):
             nrm_zs2_embeddings, y_true
         ),
         "DBS-og_true": sklearn.metrics.davies_bouldin_score(og_embeddings, y_true),
+        "DBS-pix_true": sklearn.metrics.calinski_harabasz_score(raw_images, y_true),
     }
     results.update(_results)
 
@@ -512,6 +519,9 @@ def run(config):
         results["CHS-og_pred"] = sklearn.metrics.calinski_harabasz_score(
             og_embeddings, y_pred
         )
+        results["CHS-pix_pred"] = sklearn.metrics.calinski_harabasz_score(
+            raw_images, y_pred
+        )
         results["DBS_pred"] = sklearn.metrics.davies_bouldin_score(embeddings, y_pred)
         results["DBS-nrm_pred"] = sklearn.metrics.davies_bouldin_score(
             nrm_embeddings, y_pred
@@ -524,6 +534,9 @@ def run(config):
         )
         results["DBS-og_pred"] = sklearn.metrics.davies_bouldin_score(
             og_embeddings, y_pred
+        )
+        results["DBS-pix_pred"] = sklearn.metrics.davies_bouldin_score(
+            raw_images, y_pred
         )
 
     # Repeat metrics, but considering only the samples that were clustered
@@ -550,6 +563,9 @@ def run(config):
             results["CHS-og_pred_clus"] = sklearn.metrics.calinski_harabasz_score(
                 og_embeddings[select_clustered], ycp
             )
+            results["CHS-pix_pred_clus"] = sklearn.metrics.calinski_harabasz_score(
+                raw_images[select_clustered], ycp
+            )
             results["DBS_pred_clus"] = sklearn.metrics.davies_bouldin_score(ec, ycp)
             results["DBS-nrm_pred_clus"] = sklearn.metrics.davies_bouldin_score(
                 nrm_embeddings[select_clustered], ycp
@@ -563,6 +579,9 @@ def run(config):
             results["DBS-og_pred_clus"] = sklearn.metrics.davies_bouldin_score(
                 og_embeddings[select_clustered], ycp
             )
+            results["DBS-pix_pred_clus"] = sklearn.metrics.davies_bouldin_score(
+                raw_images[select_clustered], ycp
+            )
 
     # Compute silhouette scores with several distance metrics
     for dm in ["euclidean", "l1", "chebyshev", "arccos", "braycurtis", "canberra"]:
@@ -572,6 +591,7 @@ def run(config):
             ("zs2", zs2_embeddings),
             ("zs2-nrm", nrm_zs2_embeddings),
             ("og", og_embeddings),
+            ("pix", raw_images),
         ]:
             if space_name == "reduced":
                 prefix = f"silhouette-{dm}"

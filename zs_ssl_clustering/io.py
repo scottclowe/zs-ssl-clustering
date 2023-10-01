@@ -41,11 +41,15 @@ def sanitize_filename(text, allow_dotfiles=False):
     return text
 
 
-def get_embeddings_path(config):
+def get_embeddings_path(config, raw=False):
     """
     Generate path to embeddings file.
     """
-    fname = config.dataset_name + "__" + config.model + ".npz"
+    if raw:
+        model = "none"
+    else:
+        model = config.model
+    fname = f"{config.dataset_name}__{model}.npz"
     fname = sanitize_filename(fname)
     fname = os.path.join(
         config.embedding_dir,
