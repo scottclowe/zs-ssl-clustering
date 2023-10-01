@@ -410,9 +410,35 @@ def run(config):
     else:
         raise ValueError(f"Unrecognized clusterer: '{config.clusterer_name}'")
 
+    # Standardize to zero mean, unit variance
+    zs2_embeddings = embeddings - np.mean(embeddings, axis=0)
+    sigma = np.std(zs2_embeddings, axis=0)
+    zs2_embeddings /= sigma
+    # Handle the case where a dimension has zero variance
+    zs2_embeddings[:, sigma == 0] = 0
+    # Correct for distances scaling up with the number of dimensions
+    zs2_embeddings /= np.sqrt(zs2_embeddings.shape[-1])
+
+    # Normalize embeddings to have unit length
     nrm_embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+
+    # Normalize z-scored embeddings to have unit length
+    nrm_zs2_embeddings = zs2_embeddings / np.linalg.norm(
+        zs2_embeddings, axis=1, keepdims=True
+    )
+
     _embeddings = embeddings
-    if config.normalize or config.distance_metric == "arccos":
+
+    if config.zscore2 and (config.normalize or config.distance_metric == "arccos"):
+        # Fit clusterer on embeddings that are z-scored and then normalized
+        _embeddings = nrm_zs2_embeddings
+
+    elif config.zscore2:
+        # Fit clusterer on z-scored embeddings
+        _embeddings = zs2_embeddings
+
+    elif config.normalize or config.distance_metric == "arccos":
+        # Fit clusterer on normalized embeddings
         _embeddings = nrm_embeddings
 
     # Wipe the state of cluster arguments that were not relevant to the
@@ -455,9 +481,17 @@ def run(config):
         "homogeneity": sklearn.metrics.homogeneity_score(y_true, y_pred),
         "CHS_true": sklearn.metrics.calinski_harabasz_score(embeddings, y_true),
         "CHS-nrm_true": sklearn.metrics.calinski_harabasz_score(nrm_embeddings, y_true),
+        "CHS-zs2_true": sklearn.metrics.calinski_harabasz_score(zs2_embeddings, y_true),
+        "CHS-zs2-nrm_true": sklearn.metrics.calinski_harabasz_score(
+            nrm_zs2_embeddings, y_true
+        ),
         "CHS-og_true": sklearn.metrics.calinski_harabasz_score(og_embeddings, y_true),
         "DBS_true": sklearn.metrics.davies_bouldin_score(embeddings, y_true),
         "DBS-nrm_true": sklearn.metrics.davies_bouldin_score(nrm_embeddings, y_true),
+        "DBS-zs2_true": sklearn.metrics.davies_bouldin_score(zs2_embeddings, y_true),
+        "DBS-zs2-nrm_true": sklearn.metrics.davies_bouldin_score(
+            nrm_zs2_embeddings, y_true
+        ),
         "DBS-og_true": sklearn.metrics.davies_bouldin_score(og_embeddings, y_true),
     }
     results.update(_results)
@@ -469,12 +503,24 @@ def run(config):
         results["CHS-nrm_pred"] = sklearn.metrics.calinski_harabasz_score(
             nrm_embeddings, y_pred
         )
+        results["CHS-zs2_pred"] = sklearn.metrics.calinski_harabasz_score(
+            zs2_embeddings, y_pred
+        )
+        results["CHS-zs2-nrm_pred"] = sklearn.metrics.calinski_harabasz_score(
+            nrm_zs2_embeddings, y_pred
+        )
         results["CHS-og_pred"] = sklearn.metrics.calinski_harabasz_score(
             og_embeddings, y_pred
         )
         results["DBS_pred"] = sklearn.metrics.davies_bouldin_score(embeddings, y_pred)
         results["DBS-nrm_pred"] = sklearn.metrics.davies_bouldin_score(
             nrm_embeddings, y_pred
+        )
+        results["DBS-zs2_pred"] = sklearn.metrics.davies_bouldin_score(
+            zs2_embeddings, y_pred
+        )
+        results["DBS-zs2-nrm_pred"] = sklearn.metrics.davies_bouldin_score(
+            nrm_zs2_embeddings, y_pred
         )
         results["DBS-og_pred"] = sklearn.metrics.davies_bouldin_score(
             og_embeddings, y_pred
@@ -495,12 +541,24 @@ def run(config):
             results["CHS-nrm_pred_clus"] = sklearn.metrics.calinski_harabasz_score(
                 nrm_embeddings[select_clustered], ycp
             )
+            results["CHS-zs2_pred_clus"] = sklearn.metrics.calinski_harabasz_score(
+                zs2_embeddings[select_clustered], ycp
+            )
+            results["CHS-zs2-nrm_pred_clus"] = sklearn.metrics.calinski_harabasz_score(
+                nrm_zs2_embeddings[select_clustered], ycp
+            )
             results["CHS-og_pred_clus"] = sklearn.metrics.calinski_harabasz_score(
                 og_embeddings[select_clustered], ycp
             )
             results["DBS_pred_clus"] = sklearn.metrics.davies_bouldin_score(ec, ycp)
             results["DBS-nrm_pred_clus"] = sklearn.metrics.davies_bouldin_score(
                 nrm_embeddings[select_clustered], ycp
+            )
+            results["DBS-zs2_pred_clus"] = sklearn.metrics.davies_bouldin_score(
+                zs2_embeddings[select_clustered], ycp
+            )
+            results["DBS-zs2-nrm_pred_clus"] = sklearn.metrics.davies_bouldin_score(
+                nrm_zs2_embeddings[select_clustered], ycp
             )
             results["DBS-og_pred_clus"] = sklearn.metrics.davies_bouldin_score(
                 og_embeddings[select_clustered], ycp
@@ -511,6 +569,8 @@ def run(config):
         for space_name, embs in [
             ("reduced", embeddings),
             ("nrm", nrm_embeddings),
+            ("zs2", zs2_embeddings),
+            ("zs2-nrm", nrm_zs2_embeddings),
             ("og", og_embeddings),
         ]:
             if space_name == "reduced":
@@ -750,6 +810,29 @@ def get_parser():
         "--normalize",
         action="store_true",
         help="L2 normalize embeddings (After PCA if applicable)",
+    )
+    mx_group = group.add_mutually_exclusive_group()
+    mx_group.add_argument(
+        "--zscore2",
+        dest="zscore2",
+        action="store_true",
+        default=False,
+        help=(
+            "Standardize with the z-score of each dimension, and divide by sqrt(ndim)."
+            " (Applied after reduction, before clustering)."
+            " Default: disabled."
+        ),
+    )
+    mx_group.add_argument(
+        "--no-zscore2",
+        dest="zscore2",
+        action="store_false",
+        default=False,
+        help=(
+            "Don't standardize data as the z-score of each dimension between"
+            " reduction and clustering."
+            " This is the default behaviour."
+        ),
     )
 
     # Clusterer args ----------------------------------------------------------
