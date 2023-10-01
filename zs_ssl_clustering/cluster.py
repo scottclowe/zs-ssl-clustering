@@ -443,6 +443,7 @@ def run(config):
         "reduced_dim": reduced_dim,
         "time_reducing": end_reducing - start_reducing,
         "time_clustering": end_cluster - start_cluster,
+        "y_pred": y_pred,
         "num_cluster_true": n_clusters_gt,
         "num_cluster_pred": n_clusters_pred,
         "ratio_clustered": ratio_clustered,
