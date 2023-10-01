@@ -124,42 +124,14 @@ def run_one_worker(gpu, ngpus_per_node, config):
 
     # Encoder -----------------------------------------------------------------
     # Build our Encoder.
-    # We have to build the encoder before we load the dataset because it will
-    # inform us about what size images we should produce in the preprocessing pipeline.
     encoder = encoders.get_encoder(config.model)
 
     n_class, raw_img_size, img_channels = datasets.image_dataset_sizes(
         config.dataset_name
     )
-    encoder_config = getattr(encoders, "data_config", {})
 
     if config.image_size is None:
-        if "input_size" in encoder_config:
-            config.image_size = encoder_config["input_size"][-1]
-            print(
-                f"Setting model input image size to encoder's expected input size: {config.image_size}"
-            )
-        else:
-            config.image_size = 224
-            print(f"Setting model input image size to default: {config.image_size}")
-            if raw_img_size:
-                warnings.warn(
-                    "Be aware that we are using a different input image size"
-                    f" ({config.image_size}px) to the raw image size in the"
-                    f" dataset ({raw_img_size}px).",
-                    UserWarning,
-                    stacklevel=2,
-                )
-    elif (
-        "input_size" in encoder_config
-        and encoder_config["input_size"][-1] != config.image_size
-    ):
-        warnings.warn(
-            f"A different image size {config.image_size} than what the model was"
-            f" pretrained with {encoder_config['input_size'][-1]} was suplied",
-            UserWarning,
-            stacklevel=2,
-        )
+        config.image_size = 224
 
     # Configure model for distributed training --------------------------------
     print("\nEncoder architecture:")
@@ -416,7 +388,7 @@ def get_parser():
     group.add_argument(
         "--image-size",
         type=int,
-        help="Size of images to use as model input. Default: encoder's default.",
+        help="Size of images to use as model input. Default: 224.",
     )
     # Architecture args -------------------------------------------------------
     group = parser.add_argument_group("Architecture")
