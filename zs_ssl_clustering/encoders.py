@@ -198,7 +198,10 @@ class MoCoV3(nn.Module):
 
 
 def get_encoder(model_name):
-    if model_name.startswith("timm"):
+    if model_name == "none":
+        return nn.Flatten()
+
+    elif model_name.startswith("timm"):
         return TimmEncoder(model_name)
 
     elif model_name.startswith("dinov2"):

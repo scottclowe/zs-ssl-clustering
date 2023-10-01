@@ -66,7 +66,12 @@ def run(config):
         config.dataset_name
     )
 
-    if config.image_size is None:
+    # Set image size to resize and crop to
+    if config.image_size is not None:
+        pass
+    elif config.model == "none" and raw_img_size is not None:
+        config.image_size = raw_img_size
+    elif config.image_size is None:
         config.image_size = 224
 
     # Configure model for distributed training --------------------------------
@@ -86,11 +91,17 @@ def run(config):
 
     # DATASET =================================================================
     # Transforms --------------------------------------------------------------
+    if config.model == "none":
+        norm_type = "none"
+    elif config.model.startswith("clip"):
+        norm_type = "clip"
+    else:
+        config.model = "imagenet"
     transform_eval = data_transformations.get_transform(
         config.zoom_ratio,
         image_size=config.image_size,
-        image_channels=img_channels,
-        norm_type="clip" if config.model.startswith("clip") else "imagenet",
+        image_channels=-1 if config.model == "none" else img_channels,
+        norm_type=norm_type,
     )
 
     # Dataset -----------------------------------------------------------------
