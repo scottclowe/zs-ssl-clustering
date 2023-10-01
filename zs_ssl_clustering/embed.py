@@ -307,7 +307,7 @@ def get_parser():
         "--encoder",
         dest="model",
         type=str,
-        default="resnet18",
+        default="resnet50",
         help="Name of model architecture. Default: %(default)s",
     )
     # Output checkpoint args --------------------------------------------------
