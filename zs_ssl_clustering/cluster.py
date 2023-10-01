@@ -572,14 +572,14 @@ def run(config):
     )
     for k, v in results.items():
         if "time" in k:
-            print(f"  {k + ' ':.<32s} {v:10.4f} seconds")
+            print(f"  {k + ' ':.<36s} {v:10.4f} seconds")
         elif isinstance(k, int):
-            print(f"  {k + ' ':.<32s} {v:>5d}")
+            print(f"  {k + ' ':.<36s} {v:>5d}")
         else:
             try:
-                print(f"  {k + ' ':.<32s} {v:10.4f}")
+                print(f"  {k + ' ':.<36s} {v:10.4f}")
             except TypeError:
-                print(f"  {k + ' ':.<32s} {v}")
+                print(f"  {k + ' ':.<36s} {v}")
 
     if config.log_wandb:
         wandb.log(results)
