@@ -1,6 +1,7 @@
 clip @ git+https://github.com/openai/CLIP@a1d071733d7111c9c014f024669f959182114e33
 numpy
 pandas
+psutil
 pynndescent!=0.5.9,!=0.5.10
 scikit-learn>=1.3.0
 timm>=0.6.12

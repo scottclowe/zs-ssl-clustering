@@ -7,6 +7,7 @@ import time
 from datetime import datetime
 
 import numpy as np
+import psutil
 import sklearn.cluster
 import sklearn.manifold
 import sklearn.metrics
@@ -61,6 +62,8 @@ def run(config):
         # If arccos distance metric is used, we need to normalize the vectors
         # to unit length.
         config.normalize = True
+
+    config.memory_total_GB = psutil.virtual_memory().total / 1_000_000_000
 
     # Handle arccos distance metric by normalizing the vectors ourself and
     # passing euclidean to the clusterer, since it doesn't support arccos directly.
