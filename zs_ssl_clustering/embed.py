@@ -9,72 +9,28 @@ import numpy as np
 import torch
 import torch.optim
 import torch.utils.data
-from torch import nn
-from torch.utils.data.distributed import DistributedSampler
 
 from zs_ssl_clustering import data_transformations, datasets, encoders, io, utils
 
 
 def run(config):
     r"""
-    Begin running the experiment.
+    Begin running the experiment on a single worker.
 
     Parameters
     ----------
     config : argparse.Namespace or OmegaConf
         The configuration for this experiment.
     """
-    ngpus_per_node = torch.cuda.device_count()
-    config.world_size = ngpus_per_node * config.node_count
-    config.distributed = config.world_size > 1
-    config.batch_size = config.batch_size_per_gpu * config.world_size
-
-    if config.distributed:
-        # Use torch.multiprocessing.spawn to launch distributed processes: the
-        # run_one_worker process function
-        torch.multiprocessing.spawn(
-            run_one_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, config)
-        )
-    else:
-        # Simply call main_worker function once
-        run_one_worker(config.gpu, ngpus_per_node, config)
-
-
-def run_one_worker(gpu, ngpus_per_node, config):
-    r"""
-    Run one worker in the distributed training process.
-
-    Parameters
-    ----------
-    gpu : int
-        The GPU index of this worker, relative to this node.
-    ngpus_per_node : int
-        The number of GPUs per node.
-    config : argparse.Namespace or OmegaConf
-        The configuration for this experiment.
-    """
-    config.gpu = gpu
+    config.batch_size_per_gpu = config.batch_size
 
     if config.seed is not None:
         utils.set_rng_seeds_fixed(config.seed)
-    elif config.distributed and not config.model_output_dir and not config.models_dir:
-        raise ValueError(
-            "A seed or checkpoint file must be specified for distributed training"
-            " so that each GPU-worker starts with the same initial weights."
-        )
 
     if config.deterministic:
         print("Running in deterministic cuDNN mode. Performance may be slower.")
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
-
-    # Suppress printing if this is not the master process for the node
-    if config.distributed and config.gpu != 0:
-
-        def print_pass(*args, **kwargs):
-            pass
-
-        builtins.print = print_pass
 
     n_cpus = utils.get_num_cpu_available()
     print()
@@ -82,31 +38,11 @@ def run_one_worker(gpu, ngpus_per_node, config):
     print()
     print(config)
     print()
-    print(f"Node rank {config.node_rank}")
     print(f"Found {torch.cuda.device_count()} GPUs and {n_cpus} CPUs.")
 
     if config.log_wandb:
         # Lazy import of wandb, since logging to wandb is optional
         import wandb
-
-    # DISTRIBUTION ============================================================
-    if config.distributed:
-        # For multiprocessing distributed training, gpu rank needs to be
-        # set to the global rank among all the processes.
-        config.gpu_rank = config.node_rank * ngpus_per_node + gpu
-        print(f"GPU rank {config.gpu_rank} of {config.world_size}")
-        print(
-            f"Communicating with master worker {config.dist_url} via {config.dist_backend}"
-        )
-        torch.distributed.init_process_group(
-            backend=config.dist_backend,
-            init_method=config.dist_url,
-            world_size=config.world_size,
-            rank=config.gpu_rank,
-        )
-        torch.distributed.barrier()
-    else:
-        config.gpu_rank = 0
 
     # Check which device to use
     use_cuda = not config.no_cuda and torch.cuda.is_available()
@@ -143,21 +79,6 @@ def run_one_worker(gpu, ngpus_per_node, config):
 
     if not torch.cuda.is_available():
         print("Using CPU (this will be slow)")
-    elif config.distributed:
-        # For multiprocessing distributed, the DistributedDataParallel
-        # constructor should always set a single device scope, otherwise
-        # DistributedDataParallel will use all available devices.
-        encoder.to(device)
-        if config.gpu is not None:
-            torch.cuda.set_device(config.gpu)
-            config.workers = int((config.workers + ngpus_per_node - 1) / ngpus_per_node)
-            encoder = nn.parallel.DistributedDataParallel(
-                encoder, device_ids=[config.gpu]
-            )
-        else:
-            # DistributedDataParallel will divide and allocate batch_size to all
-            # available GPUs if device_ids are not set
-            encoder = nn.parallel.DistributedDataParallel(encoder)
     else:
         if config.gpu is not None:
             torch.cuda.set_device(config.gpu)
@@ -219,15 +140,6 @@ def run_one_worker(gpu, ngpus_per_node, config):
         cuda_kwargs = {"num_workers": config.workers, "pin_memory": True}
         dl_kwargs.update(cuda_kwargs)
 
-    if config.distributed:
-        # The DistributedSampler breaks up the dataset across the GPUs
-        dl_kwargs["sampler"] = DistributedSampler(
-            dataset,
-            shuffle=False,
-            drop_last=False,
-        )
-        dl_kwargs["shuffle"] = None
-
     dataloader = torch.utils.data.DataLoader(dataset, **dl_kwargs)
 
     # TRAIN ===================================================================
@@ -242,9 +154,7 @@ def run_one_worker(gpu, ngpus_per_node, config):
     # Create embeddings
     t0 = time.time()
     print("Creating embeddings...")
-    embeddings, y_true = embed_dataset(
-        dataloader, encoder, device, is_distributed=config.distributed
-    )
+    embeddings, y_true = embed_dataset(dataloader, encoder, device)
     print(f"Created {len(embeddings)} embeddings in {time.time() - t0:.2f}s")
     fname = io.get_embeddings_path(config)
     # Save embeddings
@@ -435,13 +345,9 @@ def get_parser():
     group = parser.add_argument_group("Hardware configuration")
     group.add_argument(
         "--batch-size",
-        dest="batch_size_per_gpu",
         type=int,
         default=128,
-        help=(
-            "Batch size per GPU. The total batch size will be this value times"
-            " the total number of GPUs used. Default: %(default)s"
-        ),
+        help="Batch size. Default: %(default)s",
     )
     group.add_argument(
         "--workers",
@@ -457,37 +363,7 @@ def get_parser():
         "--gpu",
         default=None,
         type=int,
-        help="Index of GPU to use. Setting this will disable GPU parallelism.",
-    )
-    group.add_argument(
-        "--node-count",
-        default=1,
-        type=int,
-        help="Number of nodes for distributed training.",
-    )
-    group.add_argument(
-        "--node-rank",
-        "--rank",
-        dest="node_rank",
-        default=0,
-        type=int,
-        help="Node rank for distributed training.",
-    )
-    group.add_argument(
-        "--dist-url",
-        default="tcp://localhost:23456",
-        type=str,
-        help="URL used to set up distributed training.",
-    )
-    group.add_argument(
-        "--dist-backend",
-        default="nccl",
-        type=str,
-        help=(
-            "Distributed training backend. Must be supported by"
-            " torch.distributed (one of gloo, mpi, nccl), and supported by"
-            " your GPU server."
-        ),
+        help="Index of GPU to use.",
     )
     # Logging args ------------------------------------------------------------
     group = parser.add_argument_group("Debugging and logging")

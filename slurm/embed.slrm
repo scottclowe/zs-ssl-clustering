@@ -99,123 +99,25 @@ echo ""
 echo "-------- Begin main script ---------------------------------------------"
 date
 echo ""
-# Store the master node's IP address in the MASTER_ADDR environment variable.
-export MASTER_ADDR="$(hostname -s)"
-echo "Rank $SLURM_NODEID master node is at $MASTER_ADDR"
-
-# Get the address of a random available socket (aka port number).
-# By briefly opening the connection, the system is less likely to allocate
-# something else to the socket before we start using it for real.
-# https://unix.stackexchange.com/a/132524/
-MASTER_PORT="$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1])')";
-echo "Will use port $MASTER_PORT for NCCL communication"
-
 # Our job requests a minimum number of CPUs per node, but we might have been
 # allocated more than that. ${SLURM_CPUS_ON_NODE} reflects the number of CPUs
 # actually allocated to this job. For reproducibility, we should only use
 # as many workers as the number of CPUs as we requested.
 NUM_WORKERS=$(( SLURM_GPUS_ON_NODE * SLURM_CPUS_PER_GPU ))
 
-if [[ "$SLURM_JOB_NUM_NODES" == "1" ]];
-then
-    # Single node configuration
-    # This is simpler than the multi-GPU configuration, as we only have to
-    # launch one embed.py process.
-    echo ""
-    echo "Main script begins with host tcp://localhost:$MASTER_PORT with backend NCCL"
-    echo "Single ($SLURM_JOB_NUM_NODES) node training ($SLURM_GPUS_ON_NODE GPUs)"
-    echo ""
-    #
-    # We just need to call the embed.py script once and embed.py will launch a
-    # process for each GPU on that node automatically.
-    #
-    # We pass on to embed.py an arary of arbitrary extra arguments given to this
-    # slurm script contained in the $@ magic variable (i.e. "${@}")
-    #
-    # N.B. If you alter this, be sure to alter the multi-GPU implementation
-    # below too!
-    python "$PROJECT_DIRN/embed.py" \
-        --rank=0 \
-        --dist-url="tcp://localhost:$MASTER_PORT" \
-        --node-count="$SLURM_JOB_NUM_NODES" \
-        --workers="$NUM_WORKERS" \
-        --seed="$SEED" \
-        --log-wandb \
-        --run-name="$SLURM_JOB_NAME" \
-        --run-id="$JOB_ID" \
-        "${@}"
-
-else
-    # Multi-GPU configuration
-    echo ""
-    echo "Main script begins with host tcp://${MASTER_ADDR}:$MASTER_PORT with backend NCCL"
-    echo "Multiple ($SLURM_JOB_NUM_NODES) node training (x$SLURM_GPUS_ON_NODE GPUs per node)"
-    echo ""
-    # export NCCL_DEBUG=INFO  # Enable this to debug NCCL errors
-    export NCCL_BLOCKING_WAIT=1  # Set this when using the NCCL backend for inter-GPU communication.
-    export NCCL_IB_DISABLE=1
-    #
-    # Make a shell script that calls our main.py script. The shell script
-    # will have variables written to it from this process, but will use its
-    # own SLURM environment variable to determine its rank.
-    # We do this by defining and then calling a worker_command fuction so we can
-    # more easily decide where to pipe its output. The main worker has its
-    # output piped to the main output file, whilst other workers pipe their
-    # outputs to their own files in the slogs-inner directory.
-    #
-    # N.B. If you alter the command to write the script below, be sure to alter
-    # the single-GPU implementation above too!
-    mkdir -p slrm_auto_script
-    worker_script="slrm_auto_script/srun_worker_${JOB_LABEL}.sh"
-    if [ "$SBATCH_OUTPUT" != "" ];
-    then
-        :  # pass
-    elif [ "$SLURM_ARRAY_TASK_COUNT" != "" ];
-    then
-        SBATCH_OUTPUT="slogs/${SLURM_JOB_NAME}__${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.out";
-    else
-        SBATCH_OUTPUT="slogs/${SLURM_JOB_NAME}__${SLURM_JOB_ID}_4294967294.out";
-    fi
-    OUTPUT_BASE="${SBATCH_OUTPUT##*/}"
-    OUTPUT_STEM="${OUTPUT_BASE%.*}"
-    OUTPUT_EXTN="${OUTPUT_BASE##*.}"
-    cat > "$worker_script" <<- EOM
-sleep \$(( SLURM_PROCID * 5 ))
-worker_command() {
-    python $PROJECT_DIRN/embed.py \
---rank="\${SLURM_PROCID}" \
---dist-url="tcp://${MASTER_ADDR}:${MASTER_PORT}" \
---node-count="$SLURM_JOB_NUM_NODES" \
---workers="$NUM_WORKERS" \
---seed="$SEED" \
---log-wandb \
---run-name="$SLURM_JOB_NAME" \
---run-id="$JOB_ID" \
-${@}
-}
-OUTPUT_FNAME="slogs-inner/${OUTPUT_STEM}-r\${SLURM_PROCID}.${OUTPUT_EXTN}"
-if (( SLURM_PROCID  == 0 )); then
-    worker_command | tee -a "\$OUTPUT_FNAME"
-else
-    worker_command >> "\$OUTPUT_FNAME"
-fi
-EOM
-    # Create a log directory for our inner tasks to write their outputs to.
-    mkdir -p slogs-inner
-    echo ""
-    echo "Will execute $worker_script on $SLURM_JOB_NUM_NODES nodes, with contents:"
-    cat "$worker_script"
-    echo ""
-    # By executing srun inside a slurm script, we initiate one srun instance
-    # for every task we created in the SLURM header. Since we asked for one
-    # task per node, each of these will run this command. The main worker
-    # wrote the srun_worker_JOBLABEL.sh script and fixed the variables that
-    # the other nodes need to know so they can communicate with each other.
-    # Once embed.py is run on each node, it will handle spawning one process
-    # for each of the GPUs on the node.
-    srun --nodes="$SLURM_JOB_NUM_NODES" bash "$worker_script"
-
-fi
+echo ""
+echo "Main script begins."
+echo "Single GPU job ($SLURM_JOB_NUM_NODES x $SLURM_GPUS_ON_NODE)"
+echo ""
+# We pass on to embed.py an arary of arbitrary extra arguments given to this
+# slurm script contained in the $@ magic variable (i.e. "${@}")
+python "$PROJECT_DIRN/embed.py" \
+    --workers="$NUM_WORKERS" \
+    --seed="$SEED" \
+    --log-wandb \
+    --run-name="$SLURM_JOB_NAME" \
+    --run-id="$JOB_ID" \
+    "${@}"
 
 echo ""
 echo "------------------------------------------------------------------------"
