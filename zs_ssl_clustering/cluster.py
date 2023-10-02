@@ -44,6 +44,7 @@ METRICS = [
 
 
 def run(config):
+    start_all = time.time()
     print("Configuration:")
     print()
     print(config)
@@ -431,14 +432,17 @@ def run(config):
 
     if config.zscore2 and (config.normalize or config.distance_metric == "arccos"):
         # Fit clusterer on embeddings that are z-scored and then normalized
+        print("Using z-scored then normalized embeddings")
         _embeddings = nrm_zs2_embeddings
 
     elif config.zscore2:
         # Fit clusterer on z-scored embeddings
+        print("Using z-scored embeddings")
         _embeddings = zs2_embeddings
 
     elif config.normalize or config.distance_metric == "arccos":
         # Fit clusterer on normalized embeddings
+        print("Using normalized (unit length) embeddings")
         _embeddings = nrm_embeddings
 
     # Wipe the state of cluster arguments that were not relevant to the
@@ -454,10 +458,14 @@ def run(config):
             {"workers": utils.get_num_cpu_available()}, allow_val_change=True
         )
 
+    print("Start fitting clusterer...")
     start_cluster = time.time()
     clusterer.fit(_embeddings)
     end_cluster = time.time()
+    print(f"Finished fitting clusterer in {end_cluster - start_cluster:.1f}s")
 
+    print("Calculating performance metrics...")
+    start_metrics = time.time()
     y_pred = clusterer.labels_
     select_clustered = y_pred >= 0
     n_clusters_pred = len(np.unique(y_pred[select_clustered]))
@@ -630,6 +638,11 @@ def run(config):
         results["iter"] = clusterer.n_iter_  # Number of iterations run.
         results["converged"] = clusterer.n_iter_ < config.max_iter
 
+    end_metrics = time.time()
+    print(
+        f"Finished calculating performance metrics in {end_metrics - start_metrics:.1f}s"
+    )
+
     print(
         f"\n{config.clusterer_name}({config.model}({config.dataset_name}))"
         " evaluation results:"
@@ -646,7 +659,15 @@ def run(config):
                 print(f"  {k + ' ':.<36s} {v}")
 
     if config.log_wandb:
+        print("Logging results to Weights & Biases...")
+        start_wandb = time.time()
         wandb.log(results)
+        end_wandb = time.time()
+        print(
+            f"Finished logging results to Weights & Biases in {end_wandb - start_wandb:.1f}s"
+        )
+
+    print(f"Finished everything in {time.time() - start_all:.1f}s")
 
     return results
 
