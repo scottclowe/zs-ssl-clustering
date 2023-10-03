@@ -64,7 +64,9 @@ def run(config):
         # to unit length.
         config.normalize = True
 
-    config.memory_total_GB = psutil.virtual_memory().total / 1_000_000_000
+    mem_stats = psutil.virtual_memory()
+    config.memory_total_GB = mem_stats.total / 1_000_000_000
+    config.memory_avail_GB = mem_stats.available / 1_000_000_000
 
     # Handle arccos distance metric by normalizing the vectors ourself and
     # passing euclidean to the clusterer, since it doesn't support arccos directly.
