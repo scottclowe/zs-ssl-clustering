@@ -658,7 +658,7 @@ def run(config):
             )
 
     # Compute silhouette scores with several distance metrics
-    for dm in ["euclidean", "l1", "chebyshev", "arccos", "braycurtis", "canberra"]:
+    for dm in ["euclidean", "l1", "chebyshev", "arccos"]:
         for space_name, embs in [
             ("reduced", embeddings),
             ("nrm", nrm_embeddings),
