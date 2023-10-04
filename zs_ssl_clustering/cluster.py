@@ -674,9 +674,11 @@ def run(config):
                 prefix = f"silhouette-{space_name}-{dm}"
             my_dstmtr = dm
             my_embs = embs
+            # N.B. We don't bother with ndim correction here, since it has no impact
+            # on the silhouette scores.
             if dm == "arccos":
                 my_dstmtr = "euclidean"
-                my_embs = embs / np.linalg.norm(embs, axis=1, keepdims=True)
+                my_embs = my_embs / np.linalg.norm(my_embs, axis=1, keepdims=True)
 
             # Compute metrics on ground-truth clusters
             try:
