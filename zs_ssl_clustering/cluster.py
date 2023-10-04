@@ -420,14 +420,10 @@ def run(config):
     zs2_embeddings = zs2_embeddings / sigma
     # Handle the case where a dimension has zero variance
     zs2_embeddings[:, sigma == 0] = 0
-    # Correct for distances scaling up with the number of dimensions
-    zs2_embeddings /= np.sqrt(zs2_embeddings.shape[-1])
 
     # Standardize to zero mean, AVERAGE of unit variance (a spherical scaling
     # which scales all distances equally, without altering importance of any dimensions)
     azs2_embeddings = (embeddings - mu) / np.mean(sigma)
-    # Correct for distances scaling up with the number of dimensions
-    azs2_embeddings /= np.sqrt(azs2_embeddings.shape[-1])
 
     # Normalize embeddings to have unit length
     nrm_embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
@@ -463,8 +459,6 @@ def run(config):
         _embeddings = _embeddings / sigma
         # Handle the case where a dimension has zero variance
         _embeddings[:, sigma == 0] = 0
-        # Correct for distances scaling up with the number of dimensions
-        _embeddings /= np.sqrt(_embeddings.shape[-1])
 
     elif config.zscore2 == "average":
         # Fit clusterer on average z-scored embeddings
@@ -480,6 +474,27 @@ def run(config):
         # Fit clusterer on normalized embeddings
         print("Using normalized (unit length) embeddings")
         _embeddings = nrm_embeddings
+
+    # Correct for impact of number of dimensions on distance measurements
+    if not config.ndim_correction or config.distance_metric == ["arccos"]:
+        pass
+
+    elif config.distance_metric in ["euclidean", "l2", "seuclidean"]:
+        # Correct for L2 distances scaling up like sqrt of number of dimensions
+        _embeddings = _embeddings / np.sqrt(_embeddings.shape[-1])
+
+    elif config.distance_metric in [
+        "l1",
+        "cityblock",
+        "manhattan",
+        "braycurtis",
+        "canberra",
+    ]:
+        # Correct for L1 distances scaling up like the number of dimensions
+        _embeddings = _embeddings / _embeddings.shape[-1]
+
+    elif config.distance_metric in ["chebyshev", "infinity"]:
+        pass
 
     # Wipe the state of cluster arguments that were not relevant to the
     # chosen clusterer.
@@ -940,6 +955,24 @@ def get_parser():
         help=(
             "Don't standardize data as the z-score of each dimension between"
             " reduction and clustering."
+            " This is the default behaviour."
+        ),
+    )
+    mx_group = group.add_mutually_exclusive_group()
+    mx_group.add_argument(
+        "--ndim-correction",
+        dest="ndim_correction",
+        action="store_true",
+        default=False,
+        help="Correct for distances scaling up with the number of dimensions.",
+    )
+    mx_group.add_argument(
+        "--no-ndim-correction",
+        dest="ndim_correction",
+        action="store_false",
+        default=False,
+        help=(
+            "Don't correct for distances scaling up with the number of dimensions."
             " This is the default behaviour."
         ),
     )
