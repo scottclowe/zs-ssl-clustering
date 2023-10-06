@@ -64,6 +64,9 @@ def run(config):
         # to unit length.
         config.normalize = True
 
+    if config.save_pred is None:
+        config.save_pred = config.partition == "test"
+
     mem_stats = psutil.virtual_memory()
     config.memory_total_GB = mem_stats.total / 1_000_000_000
     config.memory_avail_GB = mem_stats.available / 1_000_000_000
@@ -756,6 +759,14 @@ def run(config):
             f"Finished logging results to Weights & Biases in {end_wandb - start_wandb:.1f}s"
         )
 
+    if config.save_pred:
+        t1 = time.time()
+        fname = io.get_pred_path(config)
+        print(f"Saving y_pred to file {fname}")
+        os.makedirs(os.path.dirname(fname), exist_ok=True)
+        np.savez_compressed(fname, config=config, y_pred=y_pred)
+        print(f"Saved embeddings in {time.time() - t1:.2f}s")
+
     print(f"Finished everything in {time.time() - start_all:.1f}s")
 
     return results
@@ -822,14 +833,36 @@ def get_parser():
         default="resnet18",
         help="Name of model architecture. Default: %(default)s",
     )
-    # Output checkpoint args --------------------------------------------------
-    group = parser.add_argument_group("Output checkpoint")
+    # Input/output directory args ---------------------------------------------
+    group = parser.add_argument_group("Input/output options")
     group.add_argument(
         "--embedding-dir",
         type=str,
         metavar="PATH",
         default="embeddings",
         help="Path to directory containing embeddings.",
+    )
+    group.add_argument(
+        "--predictions-dir",
+        type=str,
+        metavar="PATH",
+        default="y_pred",
+        help="Path to output directory where predictions will be housed.",
+    )
+    mx_group = group.add_mutually_exclusive_group()
+    mx_group.add_argument(
+        "--save-pred",
+        dest="save_pred",
+        action="store_true",
+        default=None,
+        help="Save predictions to file. Default: True if partition=='test', False otherwise.",
+    )
+    mx_group.add_argument(
+        "--no-save-pred",
+        dest="save_pred",
+        action="store_false",
+        default=None,
+        help="Don't save predictions to file.",
     )
     # Reproducibility args ----------------------------------------------------
     group = parser.add_argument_group("Reproducibility")

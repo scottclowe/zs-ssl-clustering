@@ -53,3 +53,19 @@ def get_embeddings_path(config):
         fname,
     )
     return fname
+
+
+def get_pred_path(config):
+    """
+    Generate path to y_pred file.
+    """
+    fname = (
+        f"{config.partition}-{config.dataset_name}__{config.model}__{config.run_id}.npz"
+    )
+    fname = sanitize_filename(fname)
+    fname = os.path.join(
+        getattr(config, "predictions_dir", "y_pred"),
+        sanitize_filename(config.partition + f"__z{config.zoom_ratio}"),
+        fname,
+    )
+    return fname
