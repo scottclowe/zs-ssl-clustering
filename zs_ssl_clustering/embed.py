@@ -62,13 +62,6 @@ def run(config):
     # Build our Encoder.
     encoder = encoders.get_encoder(config.model)
 
-    n_class, raw_img_size, img_channels = datasets.image_dataset_sizes(
-        config.dataset_name
-    )
-
-    if config.image_size is None:
-        config.image_size = 224
-
     # Configure model for distributed training --------------------------------
     print("\nEncoder architecture:")
     print(encoder)
@@ -85,6 +78,66 @@ def run(config):
         encoder = encoder.to(device)
 
     # DATASET =================================================================
+    dataloader = make_dataloader(config, use_cuda=use_cuda)
+
+    # Print configuration -----------------------------------------------------
+    print()
+    print("Configuration:")
+    print()
+    print(config)
+    print()
+
+    # EMBED ===================================================================
+    # Ensure encoder is on the correct device
+    encoder = encoder.to(device)
+    # Create embeddings
+    t0 = time.time()
+    print("Creating embeddings...")
+    embeddings, y_true = embed_dataset(dataloader, encoder, device)
+    print(f"Created {len(embeddings)} embeddings in {time.time() - t0:.2f}s")
+
+    # Save --------------------------------------------------------------------
+    fname = io.get_embeddings_path(config)
+    # Save embeddings
+    if config.gpu_rank == 0:
+        os.makedirs(os.path.dirname(fname), exist_ok=True)
+        print(f"Saving embeddings to {fname}")
+        t1 = time.time()
+        tmp_a, tmp_b = os.path.split(fname)
+        tmp_fname = os.path.join(tmp_a, ".tmp." + tmp_b)
+        np.savez_compressed(
+            tmp_fname,
+            config=config,
+            embeddings=embeddings,
+            y_true=y_true,
+        )
+        os.rename(tmp_fname, fname)
+        print(f"Saved embeddings in {time.time() - t1:.2f}s")
+
+
+def make_dataloader(config, use_cuda=False):
+    r"""
+    Create a dataloader for a given partition of a dataset.
+
+    Parameters
+    ----------
+    config : argparse.Namespace or OmegaConf
+        The configuration for this experiment.
+    use_cuda : bool, default=False
+        Whether to use CUDA.
+
+    Returns
+    -------
+    dataloader : torch.utils.data.DataLoader
+        The dataloader for the dataset.
+    """
+    n_class, raw_img_size, img_channels = datasets.image_dataset_sizes(
+        config.dataset_name
+    )
+
+    if config.image_size is None:
+        config.image_size = 224
+
     # Transforms --------------------------------------------------------------
     transform_eval = data_transformations.get_transform(
         config.zoom_ratio,
@@ -142,36 +195,7 @@ def run(config):
 
     dataloader = torch.utils.data.DataLoader(dataset, **dl_kwargs)
 
-    # TRAIN ===================================================================
-    print()
-    print("Configuration:")
-    print()
-    print(config)
-    print()
-
-    # Ensure encoder is on the correct device
-    encoder = encoder.to(device)
-    # Create embeddings
-    t0 = time.time()
-    print("Creating embeddings...")
-    embeddings, y_true = embed_dataset(dataloader, encoder, device)
-    print(f"Created {len(embeddings)} embeddings in {time.time() - t0:.2f}s")
-    fname = io.get_embeddings_path(config)
-    # Save embeddings
-    if config.gpu_rank == 0:
-        os.makedirs(os.path.dirname(fname), exist_ok=True)
-        print(f"Saving embeddings to {fname}")
-        t1 = time.time()
-        tmp_a, tmp_b = os.path.split(fname)
-        tmp_fname = os.path.join(tmp_a, ".tmp." + tmp_b)
-        np.savez_compressed(
-            tmp_fname,
-            config=config,
-            embeddings=embeddings,
-            y_true=y_true,
-        )
-        os.rename(tmp_fname, fname)
-        print(f"Saved embeddings in {time.time() - t1:.2f}s")
+    return dataloader
 
 
 def embed_dataset(dataloader, encoder, device, is_distributed=False, log_interval=20):
