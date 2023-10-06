@@ -463,7 +463,9 @@ def run(config):
 
     # Take average-z-score of normalized embeddings
     nrm_azs2_embeddings = nrm_embeddings - np.mean(nrm_embeddings, axis=0)
-    nrm_azs2_embeddings = nrm_azs2_embeddings / np.mean(np.std(nrm_embeddings, axis=0))
+    nrm_azs2_embeddings = nrm_azs2_embeddings / np.mean(
+        np.std(nrm_azs2_embeddings, axis=0)
+    )
 
     _embeddings = embeddings
 
