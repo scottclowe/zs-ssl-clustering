@@ -116,7 +116,9 @@ def run(config):
     if config.run_id is None:
         config.run_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
+    start_loading = time.time()
     if config.model == "none":
+        print("Using raw image pixel data instead of model embedding.", flush=True)
         from torch import nn
 
         import zs_ssl_clustering.embed
@@ -126,10 +128,14 @@ def run(config):
             dataloader, nn.Flatten(), "cpu"
         )
     else:
+        fname = io.get_embeddings_path(config)
+        print(f"Loading encoder embeddings from {fname}", flush=True)
         # Only need allow_pickle=True if we're using the saved config dict
-        data = np.load(io.get_embeddings_path(config))
+        data = np.load(fname)
         embeddings = data["embeddings"]
         y_true = data["y_true"]
+
+    print(f"Finished loading data in {time.time() - start_loading}", flush=True)
 
     n_clusters_gt = len(np.unique(y_true))
     encoding_dim = embeddings.shape[-1]
@@ -209,6 +215,7 @@ def run(config):
         else:
             pca = PCA(n_components=n_components, random_state=config.seed)
             clusterer_args_used.add("seed")
+        print(f"Fitting {pca} on data shaped {embeddings.shape}...", flush=True)
         embeddings = pca.fit_transform(embeddings)
         end_pca = time.time()
         results["time_pca"] = end_pca - start_pca
@@ -255,6 +262,9 @@ def run(config):
             verbose=config.verbose > 0,
         )
         reducerman_args_used = {"dim_reducer_man_metric", "seed"}
+        print(
+            f"Fitting {reducer_man} on data shaped {_embeddings.shape}...", flush=True
+        )
         embeddings = reducer_man.fit_transform(_embeddings)
         end_reduce_man = time.time()
         results["time_reduce_man"] = end_reduce_man - start_reduce_man
@@ -282,6 +292,9 @@ def run(config):
             n_jobs=config.workers,
         )
         reducerman_args_used = {"dim_reducer_man_metric", "seed", "workers"}
+        print(
+            f"Fitting {reducer_man} on data shaped {_embeddings.shape}...", flush=True
+        )
         embeddings = reducer_man.fit_transform(_embeddings)
         end_reduce_man = time.time()
         results["time_reduce_man"] = end_reduce_man - start_reduce_man
@@ -427,6 +440,7 @@ def run(config):
     else:
         raise ValueError(f"Unrecognized clusterer: '{config.clusterer_name}'")
 
+    print("Standardizing data...", flush=True)
     # Standardize to zero mean, unit variance
     mu = np.mean(embeddings, axis=0)
     zs2_embeddings = embeddings - mu
@@ -523,7 +537,10 @@ def run(config):
             {"workers": utils.get_num_cpu_available()}, allow_val_change=True
         )
 
-    print("Start fitting clusterer...")
+    print(
+        f"Start fitting clusterer {clusterer} on data shaped {_embeddings.shape}...",
+        flush=True,
+    )
     start_cluster = time.time()
     clusterer.fit(_embeddings)
     end_cluster = time.time()
