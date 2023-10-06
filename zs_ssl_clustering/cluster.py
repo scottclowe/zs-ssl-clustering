@@ -441,68 +441,76 @@ def run(config):
         raise ValueError(f"Unrecognized clusterer: '{config.clusterer_name}'")
 
     print("Standardizing data...", flush=True)
-    # Standardize to zero mean, unit variance
-    mu = np.mean(embeddings, axis=0)
-    zs2_embeddings = embeddings - mu
-    sigma = np.std(zs2_embeddings, axis=0)
-    zs2_embeddings = zs2_embeddings / sigma
-    # Handle the case where a dimension has zero variance
-    zs2_embeddings[:, sigma == 0] = 0
-
-    # Standardize to zero mean, AVERAGE of unit variance (a spherical scaling
-    # which scales all distances equally, without altering importance of any dimensions)
-    azs2_embeddings = (embeddings - mu) / np.mean(sigma)
-
-    # Normalize embeddings to have unit length
-    nrm_embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
-
-    # Normalize z-scored embeddings to have unit length
-    zs2_nrm_embeddings = zs2_embeddings / np.linalg.norm(
-        zs2_embeddings, axis=1, keepdims=True
-    )
-
-    # Take average-z-score of normalized embeddings
-    nrm_azs2_embeddings = nrm_embeddings - np.mean(nrm_embeddings, axis=0)
-    nrm_azs2_embeddings = nrm_azs2_embeddings / np.mean(
-        np.std(nrm_azs2_embeddings, axis=0)
-    )
+    zs2_embeddings = None
+    azs2_embeddings = None
+    nrm_embeddings = None
+    zs2_nrm_embeddings = None
+    nrm_azs2_embeddings = None
 
     _embeddings = embeddings
 
     if config.zscore2 and config.distance_metric == "arccos":
         # Fit clusterer on embeddings that are z-scored then normalized
         print("Using z-scored then normalized embeddings, for arccos")
+        # Standardize to zero mean, unit variance
+        zs2_embeddings = embeddings - np.mean(embeddings, axis=0)
+        sigma = np.std(zs2_embeddings, axis=0)
+        zs2_embeddings /= sigma
+        # Handle the case where a dimension has zero variance
+        zs2_embeddings[:, sigma == 0] = 0
+        # Normalize z-scored embeddings to have unit length
+        zs2_nrm_embeddings = zs2_embeddings / np.linalg.norm(
+            zs2_embeddings, axis=1, keepdims=True
+        )
         _embeddings = zs2_nrm_embeddings
 
     elif config.zscore2 == "average" and config.normalize:
         # Fit clusterer on embeddings that are normalized then average z-scored
         print("Using normalized then average-z-scored embeddings")
+        # Normalize embeddings to have unit length
+        nrm_embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+        # Take average-z-score of normalized embeddings
+        nrm_azs2_embeddings = nrm_embeddings - np.mean(nrm_embeddings, axis=0)
+        nrm_azs2_embeddings /= np.mean(np.std(nrm_azs2_embeddings, axis=0))
         _embeddings = nrm_azs2_embeddings
 
     elif config.zscore2 and config.normalize:
         # Fit clusterer on embeddings that are normalized then z-scored
         print("Using normalized then average-z-scored embeddings")
+        # Normalize embeddings to have unit length
+        nrm_embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
         # Standardize to zero mean, unit variance
-        mu = np.mean(nrm_embeddings, axis=0)
         _embeddings = nrm_embeddings - np.mean(nrm_embeddings, axis=0)
         sigma = np.std(_embeddings, axis=0)
-        _embeddings = _embeddings / sigma
+        _embeddings /= sigma
         # Handle the case where a dimension has zero variance
         _embeddings[:, sigma == 0] = 0
 
     elif config.zscore2 == "average":
         # Fit clusterer on average z-scored embeddings
         print("Using average-z-scored embeddings")
+        # Standardize to zero mean, AVERAGE of unit variance (a spherical scaling which
+        # scales all distances equally, without altering importance of any dimensions)
+        azs2_embeddings = embeddings - np.mean(embeddings, axis=0)
+        azs2_embeddings /= np.mean(np.std(azs2_embeddings, axis=0))
         _embeddings = azs2_embeddings
 
     elif config.zscore2:
         # Fit clusterer on z-scored embeddings
         print("Using z-scored embeddings")
+        # Standardize to zero mean, unit variance
+        zs2_embeddings = embeddings - np.mean(embeddings, axis=0)
+        sigma = np.std(zs2_embeddings, axis=0)
+        zs2_embeddings /= sigma
+        # Handle the case where a dimension has zero variance
+        zs2_embeddings[:, sigma == 0] = 0
         _embeddings = zs2_embeddings
 
     elif config.normalize or config.distance_metric == "arccos":
         # Fit clusterer on normalized embeddings
         print("Using normalized (unit length) embeddings")
+        # Normalize embeddings to have unit length
+        nrm_embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
         _embeddings = nrm_embeddings
 
     # Correct for impact of number of dimensions on distance measurements
@@ -572,28 +580,10 @@ def run(config):
         "completeness": sklearn.metrics.completeness_score(y_true, y_pred),
         "homogeneity": sklearn.metrics.homogeneity_score(y_true, y_pred),
         "CHS_true": sklearn.metrics.calinski_harabasz_score(embeddings, y_true),
-        "CHS-nrm_true": sklearn.metrics.calinski_harabasz_score(nrm_embeddings, y_true),
-        "CHS-zs2_true": sklearn.metrics.calinski_harabasz_score(zs2_embeddings, y_true),
-        "CHS-azs2_true": sklearn.metrics.calinski_harabasz_score(
-            azs2_embeddings, y_true
-        ),
-        "CHS-zs2-nrm_true": sklearn.metrics.calinski_harabasz_score(
-            zs2_nrm_embeddings, y_true
-        ),
-        "CHS-nrm-azs2_true": sklearn.metrics.calinski_harabasz_score(
-            nrm_azs2_embeddings, y_true
-        ),
+        "CHS-fit_true": sklearn.metrics.calinski_harabasz_score(_embeddings, y_true),
         "CHS-og_true": sklearn.metrics.calinski_harabasz_score(og_embeddings, y_true),
         "DBS_true": sklearn.metrics.davies_bouldin_score(embeddings, y_true),
-        "DBS-nrm_true": sklearn.metrics.davies_bouldin_score(nrm_embeddings, y_true),
-        "DBS-zs2_true": sklearn.metrics.davies_bouldin_score(zs2_embeddings, y_true),
-        "DBS-azs2_true": sklearn.metrics.davies_bouldin_score(azs2_embeddings, y_true),
-        "DBS-zs2-nrm_true": sklearn.metrics.davies_bouldin_score(
-            zs2_nrm_embeddings, y_true
-        ),
-        "DBS-nrm-azs2_true": sklearn.metrics.davies_bouldin_score(
-            nrm_azs2_embeddings, y_true
-        ),
+        "DBS-fit_true": sklearn.metrics.davies_bouldin_score(_embeddings, y_true),
         "DBS-og_true": sklearn.metrics.davies_bouldin_score(og_embeddings, y_true),
     }
     results.update(_results)
@@ -602,39 +592,15 @@ def run(config):
         results["CHS_pred"] = sklearn.metrics.calinski_harabasz_score(
             embeddings, y_pred
         )
-        results["CHS-nrm_pred"] = sklearn.metrics.calinski_harabasz_score(
-            nrm_embeddings, y_pred
-        )
-        results["CHS-zs2_pred"] = sklearn.metrics.calinski_harabasz_score(
-            zs2_embeddings, y_pred
-        )
-        results["CHS-azs2_pred"] = sklearn.metrics.calinski_harabasz_score(
-            azs2_embeddings, y_pred
-        )
-        results["CHS-zs2-nrm_pred"] = sklearn.metrics.calinski_harabasz_score(
-            zs2_nrm_embeddings, y_pred
-        )
-        results["CHS-nrm-azs2_pred"] = sklearn.metrics.calinski_harabasz_score(
-            nrm_azs2_embeddings, y_pred
+        results["CHS-fit_pred"] = sklearn.metrics.calinski_harabasz_score(
+            _embeddings, y_pred
         )
         results["CHS-og_pred"] = sklearn.metrics.calinski_harabasz_score(
             og_embeddings, y_pred
         )
         results["DBS_pred"] = sklearn.metrics.davies_bouldin_score(embeddings, y_pred)
-        results["DBS-nrm_pred"] = sklearn.metrics.davies_bouldin_score(
-            nrm_embeddings, y_pred
-        )
-        results["DBS-zs2_pred"] = sklearn.metrics.davies_bouldin_score(
-            zs2_embeddings, y_pred
-        )
-        results["DBS-azs2_pred"] = sklearn.metrics.davies_bouldin_score(
-            azs2_embeddings, y_pred
-        )
-        results["DBS-zs2-nrm_pred"] = sklearn.metrics.davies_bouldin_score(
-            zs2_nrm_embeddings, y_pred
-        )
-        results["DBS-nrm-azs2_pred"] = sklearn.metrics.davies_bouldin_score(
-            nrm_azs2_embeddings, y_pred
+        results["DBS-fit_pred"] = sklearn.metrics.davies_bouldin_score(
+            _embeddings, y_pred
         )
         results["DBS-og_pred"] = sklearn.metrics.davies_bouldin_score(
             og_embeddings, y_pred
@@ -652,39 +618,15 @@ def run(config):
         results["homogeneity_clus"] = sklearn.metrics.homogeneity_score(yct, ycp)
         if n_clusters_pred > 1 and n_clusters_pred < len(ec):
             results["CHS_pred_clus"] = sklearn.metrics.calinski_harabasz_score(ec, ycp)
-            results["CHS-nrm_pred_clus"] = sklearn.metrics.calinski_harabasz_score(
-                nrm_embeddings[select_clustered], ycp
-            )
-            results["CHS-zs2_pred_clus"] = sklearn.metrics.calinski_harabasz_score(
-                zs2_embeddings[select_clustered], ycp
-            )
-            results["CHS-azs2_pred_clus"] = sklearn.metrics.calinski_harabasz_score(
-                azs2_embeddings[select_clustered], ycp
-            )
-            results["CHS-zs2-nrm_pred_clus"] = sklearn.metrics.calinski_harabasz_score(
-                zs2_nrm_embeddings[select_clustered], ycp
-            )
-            results["CHS-nrm-azs2_pred_clus"] = sklearn.metrics.calinski_harabasz_score(
-                nrm_azs2_embeddings[select_clustered], ycp
+            results["CHS-fit_pred_clus"] = sklearn.metrics.calinski_harabasz_score(
+                _embeddings[select_clustered], ycp
             )
             results["CHS-og_pred_clus"] = sklearn.metrics.calinski_harabasz_score(
                 og_embeddings[select_clustered], ycp
             )
             results["DBS_pred_clus"] = sklearn.metrics.davies_bouldin_score(ec, ycp)
-            results["DBS-nrm_pred_clus"] = sklearn.metrics.davies_bouldin_score(
-                nrm_embeddings[select_clustered], ycp
-            )
-            results["DBS-zs2_pred_clus"] = sklearn.metrics.davies_bouldin_score(
-                zs2_embeddings[select_clustered], ycp
-            )
-            results["DBS-azs2_pred_clus"] = sklearn.metrics.davies_bouldin_score(
-                azs2_embeddings[select_clustered], ycp
-            )
-            results["DBS-zs2-nrm_pred_clus"] = sklearn.metrics.davies_bouldin_score(
-                zs2_nrm_embeddings[select_clustered], ycp
-            )
-            results["DBS-nrm-azs2_pred_clus"] = sklearn.metrics.davies_bouldin_score(
-                nrm_azs2_embeddings[select_clustered], ycp
+            results["DBS-fit_pred_clus"] = sklearn.metrics.davies_bouldin_score(
+                _embeddings[select_clustered], ycp
             )
             results["DBS-og_pred_clus"] = sklearn.metrics.davies_bouldin_score(
                 og_embeddings[select_clustered], ycp
@@ -694,6 +636,7 @@ def run(config):
     for dm in ["euclidean", "l1", "chebyshev", "arccos"]:
         for space_name, embs in [
             ("reduced", embeddings),
+            ("fit", _embeddings),
             ("nrm", nrm_embeddings),
             ("zs2", zs2_embeddings),
             ("azs2", azs2_embeddings),
@@ -701,6 +644,8 @@ def run(config):
             ("nrm-azs2", nrm_azs2_embeddings),
             ("og", og_embeddings),
         ]:
+            if embs is None:
+                continue
             if space_name == "reduced":
                 prefix = f"silhouette-{dm}"
             else:
