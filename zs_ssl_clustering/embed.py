@@ -135,12 +135,12 @@ def make_dataloader(config, use_cuda=False):
         config.dataset_name
     )
 
-    if config.image_size is None:
+    if getattr(config, "image_size", None) is None:
         config.image_size = 224
 
     # Transforms --------------------------------------------------------------
     transform_eval = data_transformations.get_transform(
-        config.zoom_ratio,
+        getattr(config, "zoom_ratio", 1.0),
         image_size=config.image_size,
         image_channels=img_channels,
         norm_type="clip" if config.model.startswith("clip") else "imagenet",
@@ -149,8 +149,8 @@ def make_dataloader(config, use_cuda=False):
     # Dataset -----------------------------------------------------------------
     dataset_args = {
         "dataset": config.dataset_name,
-        "root": config.data_dir,
-        "download": config.allow_download_dataset,
+        "root": getattr(config, "data_dir", None),
+        "download": getattr(config, "allow_download_dataset", False),
     }
     if config.partition == "val":
         dataset_args["prototyping"] = True
@@ -183,7 +183,7 @@ def make_dataloader(config, use_cuda=False):
 
     # Dataloader --------------------------------------------------------------
     dl_kwargs = {
-        "batch_size": config.batch_size_per_gpu,
+        "batch_size": getattr(config, "batch_size_per_gpu", 128),
         "drop_last": False,
         "sampler": None,
         "shuffle": False,
