@@ -67,6 +67,10 @@ def run(config):
     if config.save_pred is None:
         config.save_pred = config.partition == "test"
 
+    memory_slurm = os.environ["SLURM_MEM_PER_NODE"]
+    if memory_slurm:
+        memory_slurm = float(memory_slurm)
+        config.memory_slurm = memory_slurm
     mem_stats = psutil.virtual_memory()
     config.memory_total_GB = mem_stats.total / 1_000_000_000
     config.memory_avail_GB = mem_stats.available / 1_000_000_000
