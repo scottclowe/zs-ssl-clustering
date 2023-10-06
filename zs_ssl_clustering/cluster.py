@@ -116,10 +116,21 @@ def run(config):
     if config.run_id is None:
         config.run_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    # Only need allow_pickle=True if we're using the saved config dict
-    data = np.load(io.get_embeddings_path(config))
-    embeddings = data["embeddings"]
-    y_true = data["y_true"]
+    if config.model == "none":
+        from torch import nn
+
+        import zs_ssl_clustering.embed
+
+        dataloader = zs_ssl_clustering.embed.make_dataloader(config)
+        embeddings, y_true = zs_ssl_clustering.embed.embed_dataset(
+            dataloader, nn.Flatten(), "cpu"
+        )
+    else:
+        # Only need allow_pickle=True if we're using the saved config dict
+        data = np.load(io.get_embeddings_path(config))
+        embeddings = data["embeddings"]
+        y_true = data["y_true"]
+
     n_clusters_gt = len(np.unique(y_true))
     encoding_dim = embeddings.shape[-1]
 
