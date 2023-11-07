@@ -50,8 +50,11 @@ class NABirds(VisionDataset):
 
         dataset_path = root  # os.path.join(root, 'nabirds')
         if not os.path.isdir(dataset_path):
+            if not os.path.exists(os.path.join(root, self.filename)):
+                raise RuntimeError(f"Dataset not found at {dataset_path}")
             if not check_integrity(os.path.join(root, self.filename), self.md5):
-                raise RuntimeError("Dataset not found or corrupted.")
+                raise RuntimeError(f"{self.filename} is corrupted.")
+            print(f"Extracting from {self.filename}")
             extract_archive(os.path.join(root, self.filename))
         self.loader = default_loader
         self.train = train
