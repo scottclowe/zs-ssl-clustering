@@ -360,7 +360,7 @@ def fetch_image_dataset(
         elif host == "vaughan":
             root = "/scratch/ssd004/datasets/NABirds/nabirds"
         else:
-            root = "~/Datasets/NABirds"
+            root = "~/Datasets/nabirds"
         dataset_train = NABirds(
             root,
             train=True,
