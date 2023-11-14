@@ -176,6 +176,7 @@ def fetch_image_dataset(
             root = "/scratch/gobi1/datasets/"
         else:
             root = "~/Datasets"
+        root = os.path.expanduser(root)
         dataset_train = torchvision.datasets.CIFAR10(
             os.path.join(root, dataset),
             train=True,
@@ -197,6 +198,7 @@ def fetch_image_dataset(
             root = "/scratch/ssd002/datasets/"
         else:
             root = "~/Datasets"
+        root = os.path.expanduser(root)
         dataset_train = torchvision.datasets.CIFAR100(
             os.path.join(root, dataset),
             train=True,
@@ -220,6 +222,7 @@ def fetch_image_dataset(
             root = "/scratch/gobi1/datasets/"
         else:
             root = "~/Datasets"
+        root = os.path.expanduser(root)
         dataset_train = torchvision.datasets.ImageFolder(
             os.path.join(root, "imagenet", "train"),
             transform=transform_train,
@@ -237,6 +240,7 @@ def fetch_image_dataset(
             root = "/scratch/ssd004/datasets/imagenette2/full/"
         else:
             root = "~/Datasets/imagenette/"
+        root = os.path.expanduser(root)
         dataset_train = torchvision.datasets.ImageFolder(
             os.path.join(root, "train"),
             transform=transform_train,
@@ -254,6 +258,7 @@ def fetch_image_dataset(
             root = "/scratch/ssd004/datasets/imagewoof2/full/"
         else:
             root = "~/Datasets/imagewoof/"
+        root = os.path.expanduser(root)
         dataset_train = torchvision.datasets.ImageFolder(
             os.path.join(root, "train"),
             transform=transform_train,
@@ -271,6 +276,7 @@ def fetch_image_dataset(
             root = "/scratch/ssd004/datasets/"
         else:
             root = "~/Datasets"
+        root = os.path.expanduser(root)
         # Will read from [root]/MNIST/processed
         dataset_train = torchvision.datasets.MNIST(
             root,
@@ -289,6 +295,7 @@ def fetch_image_dataset(
     elif dataset == "fashionmnist":
         if not root:
             root = "~/Datasets"
+        root = os.path.expanduser(root)
         # Will read from [root]/FashionMNIST/raw
         dataset_train = torchvision.datasets.FashionMNIST(
             root,
@@ -307,6 +314,7 @@ def fetch_image_dataset(
     elif dataset == "kmnist":
         if not root:
             root = "~/Datasets"
+        root = os.path.expanduser(root)
         # Will read from [root]/KMNIST/raw
         dataset_train = torchvision.datasets.KMNIST(
             root,
@@ -338,6 +346,7 @@ def fetch_image_dataset(
             root = "/scratch/gobi1/datasets/"
         else:
             root = "~/Datasets"
+        root = os.path.expanduser(root)
         dataset_train = torchvision.datasets.SVHN(
             os.path.join(root, "svhn"),
             split="train",
@@ -361,6 +370,7 @@ def fetch_image_dataset(
             root = "/scratch/ssd004/datasets/NABirds/nabirds"
         else:
             root = "~/Datasets/nabirds"
+        root = os.path.expanduser(root)
         dataset_train = NABirds(
             root,
             train=True,
@@ -376,6 +386,7 @@ def fetch_image_dataset(
     elif dataset in ["oxfordflowers102", "flowers102"]:
         if not root:
             root = "~/Datasets"
+        root = os.path.expanduser(root)
         # Will read from [root]/flowers-102
         dataset_train = torchvision.datasets.Flowers102(
             root,
@@ -397,6 +408,7 @@ def fetch_image_dataset(
         # is not available
         if not root:
             root = "~/Datasets"
+        root = os.path.expanduser(root)
         dataset_train = torchvision.datasets.ImageFolder(
             os.path.join(root, dataset, "train"),
             transform=transform_train,
@@ -418,6 +430,7 @@ def fetch_image_dataset(
             root = "/datasets/inat_comp"
         else:
             root = "~/Datasets/iNaturalist"
+        root = os.path.expanduser(root)
         dataset_train = torchvision.datasets.INaturalist(
             root,
             version="2021_train",
@@ -445,6 +458,7 @@ def fetch_image_dataset(
             root = "/datasets/inat_comp"
         else:
             root = "~/Datasets/iNaturalist"
+        root = os.path.expanduser(root)
         dataset_train = torchvision.datasets.INaturalist(
             root,
             version="2021_mini",
@@ -464,6 +478,7 @@ def fetch_image_dataset(
     elif dataset in "aircraft":
         if not root:
             root = "~/Datasets"
+        root = os.path.expanduser(root)
         # Will read from [root]/aircraft
         dataset_train = torchvision.datasets.FGVCAircraft(
             root,
