@@ -31,6 +31,7 @@ class NABirds(VisionDataset):
     def __init__(
         self, root, train=True, transform=None, target_transform=None, download=None
     ):
+        root = os.path.expanduser(root)
         super(NABirds, self).__init__(
             root, transform=transform, target_transform=target_transform
         )
