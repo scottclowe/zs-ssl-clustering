@@ -375,12 +375,14 @@ def fetch_image_dataset(
             root,
             train=True,
             transform=transform_train,
+            download=download if download else None,
         )
         dataset_val = None
         dataset_test = NABirds(
             root,
             train=False,
             transform=transform_eval,
+            download=download if download else None,
         )
 
     elif dataset in ["oxfordflowers102", "flowers102"]:
