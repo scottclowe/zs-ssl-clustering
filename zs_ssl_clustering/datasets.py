@@ -426,10 +426,6 @@ def fetch_image_dataset(
         # TODO Add older iNat versions?
         if root:
             pass
-        elif host == "vaughan":
-            # Not working because directory structure is
-            # 2021/train instead of 2021_train
-            root = "/datasets/inat_comp"
         else:
             root = "~/Datasets/iNaturalist"
         root = os.path.expanduser(root)
@@ -454,10 +450,6 @@ def fetch_image_dataset(
         # TODO Add older iNat versions?
         if root:
             pass
-        elif host == "vaughan":
-            # Not working because directory structure is
-            # 2021/train instead of 2021_train
-            root = "/datasets/inat_comp"
         else:
             root = "~/Datasets/iNaturalist"
         root = os.path.expanduser(root)
