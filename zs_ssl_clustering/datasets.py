@@ -132,6 +132,13 @@ def image_dataset_sizes(dataset):
         img_size = None
         num_channels = 3
 
+    elif dataset == "celeba":
+        num_classes = (
+            10178  # There's actually 10177 classes, but the 0th class is unused
+        )
+        img_size = None
+        num_channels = 3
+
     else:
         raise ValueError("Unrecognised dataset: {}".format(dataset))
 
@@ -487,6 +494,38 @@ def fetch_image_dataset(
             transform=transform_eval,
             download=download,
         )
+
+    elif dataset == "celeba":
+        if root:
+            pass
+        elif host == "vaughan":
+            root = "/scratch/ssd004/datasets/celeba_pytorch"
+        else:
+            root = "~/Datasets"
+        root = os.path.expanduser(root)
+        # Will read from [root]/celeba
+        dataset_train = torchvision.datasets.CelebA(
+            root,
+            target_type="identity",
+            split="train",
+            transform=transform_train,
+            download=download,
+        )
+        dataset_val = torchvision.datasets.CelebA(
+            root,
+            target_type="identity",
+            split="valid",
+            transform=transform_eval,
+            download=download,
+        )
+        dataset_test = torchvision.datasets.CelebA(
+            root,
+            target_type="identity",
+            split="test",
+            transform=transform_eval,
+            download=download,
+        )
+
     else:
         raise ValueError("Unrecognised dataset: {}".format(dataset))
 
