@@ -149,6 +149,11 @@ def image_dataset_sizes(dataset):
         img_size = None
         num_channels = 3
 
+    elif dataset == "lsun":
+        num_classes = 10
+        img_size = None
+        num_channels = 3
+
     else:
         raise ValueError("Unrecognised dataset: {}".format(dataset))
 
@@ -588,6 +593,23 @@ def fetch_image_dataset(
             split="test",
             transform=transform_eval,
             download=download,
+        )
+
+    elif dataset == "lsun":
+        if root:
+            pass
+        elif host == "vaughan":
+            root = "/scratch/hdd001/datasets/LSUN"
+        else:
+            root = "~/Datasets"
+        root = os.path.expanduser(root)
+        root = os.path.join(root, "lsun")
+        dataset_train = torchvision.datasets.LSUN(
+            root, classes="train", transform=transform_train
+        )
+        dataset_val = None
+        dataset_test = torchvision.datasets.LSUN(
+            root, classes="val", transform=transform_eval
         )
 
     else:
