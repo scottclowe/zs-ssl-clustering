@@ -77,6 +77,11 @@ def image_dataset_sizes(dataset):
         img_size = None
         num_channels = 3
 
+    elif dataset in ["imagenetr", "imagenetrendition"]:
+        num_classes = 200
+        img_size = None
+        num_channels = 3
+
     elif dataset.startswith("imagenette"):
         num_classes = 10
         img_size = None
@@ -251,6 +256,19 @@ def fetch_image_dataset(
         root = os.path.join(
             root, "imagenetv2", "imagenetv2-matched-frequency-format-val"
         )
+        dataset_train = None
+        dataset_val = None
+        dataset_test = torchvision.datasets.ImageFolder(root, transform=transform_eval)
+
+    elif dataset in ["imagenetr", "imagenetrendition"]:
+        if root:
+            pass
+        elif host == "vaughan":
+            root = "/scratch/ssd002/datasets/"
+        else:
+            root = "~/Datasets"
+        root = os.path.expanduser(root)
+        root = os.path.join(root, "imagenet-r")
         dataset_train = None
         dataset_val = None
         dataset_test = torchvision.datasets.ImageFolder(root, transform=transform_eval)
