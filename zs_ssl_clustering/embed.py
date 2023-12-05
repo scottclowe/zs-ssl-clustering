@@ -99,20 +99,19 @@ def run(config):
     # Save --------------------------------------------------------------------
     fname = io.get_embeddings_path(config)
     # Save embeddings
-    if config.gpu_rank == 0:
-        os.makedirs(os.path.dirname(fname), exist_ok=True)
-        print(f"Saving embeddings to {fname}")
-        t1 = time.time()
-        tmp_a, tmp_b = os.path.split(fname)
-        tmp_fname = os.path.join(tmp_a, ".tmp." + tmp_b)
-        np.savez_compressed(
-            tmp_fname,
-            config=config,
-            embeddings=embeddings,
-            y_true=y_true,
-        )
-        os.rename(tmp_fname, fname)
-        print(f"Saved embeddings in {time.time() - t1:.2f}s")
+    os.makedirs(os.path.dirname(fname), exist_ok=True)
+    print(f"Saving embeddings to {fname}")
+    t1 = time.time()
+    tmp_a, tmp_b = os.path.split(fname)
+    tmp_fname = os.path.join(tmp_a, ".tmp." + tmp_b)
+    np.savez_compressed(
+        tmp_fname,
+        config=config,
+        embeddings=embeddings,
+        y_true=y_true,
+    )
+    os.rename(tmp_fname, fname)
+    print(f"Saved embeddings in {time.time() - t1:.2f}s")
 
 
 def make_dataloader(config, use_cuda=False):
