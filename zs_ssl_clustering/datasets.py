@@ -72,7 +72,7 @@ def image_dataset_sizes(dataset):
         img_size = 32
         num_channels = 3
 
-    elif dataset in ["imagenet", "imagenet1k", "ilsvrc2012"]:
+    elif dataset in ["imagenet", "imagenet1k", "ilsvrc2012"] or "imagenetv2" in dataset:
         num_classes = 1000
         img_size = None
         num_channels = 3
@@ -239,6 +239,21 @@ def fetch_image_dataset(
             os.path.join(root, "imagenet", "val"),
             transform=transform_eval,
         )
+
+    elif dataset in ["imagenetv2", "imagenetv2matchedfrequency"]:
+        if root:
+            pass
+        elif host == "vaughan":
+            root = "/scratch/ssd004/datasets/"
+        else:
+            root = "~/Datasets"
+        root = os.path.expanduser(root)
+        root = os.path.join(
+            root, "imagenetv2", "imagenetv2-matched-frequency-format-val"
+        )
+        dataset_train = None
+        dataset_val = None
+        dataset_test = torchvision.datasets.ImageFolder(root, transform=transform_eval)
 
     elif dataset == "imagenette":
         if root:
