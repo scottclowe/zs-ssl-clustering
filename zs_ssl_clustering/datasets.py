@@ -144,6 +144,11 @@ def image_dataset_sizes(dataset):
         img_size = None
         num_channels = 3
 
+    elif dataset == "dtd":
+        num_classes = 47
+        img_size = None
+        num_channels = 3
+
     else:
         raise ValueError("Unrecognised dataset: {}".format(dataset))
 
@@ -554,6 +559,32 @@ def fetch_image_dataset(
         dataset_test = torchvision.datasets.CelebA(
             root,
             target_type="identity",
+            split="test",
+            transform=transform_eval,
+            download=download,
+        )
+
+    elif dataset == "dtd":
+        if root:
+            pass
+        else:
+            root = "~/Datasets"
+        root = os.path.expanduser(root)
+        # Will read from [root]/dtd
+        dataset_train = torchvision.datasets.DTD(
+            root,
+            split="train",
+            transform=transform_train,
+            download=download,
+        )
+        dataset_val = torchvision.datasets.DTD(
+            root,
+            split="val",
+            transform=transform_eval,
+            download=download,
+        )
+        dataset_test = torchvision.datasets.DTD(
+            root,
             split="test",
             transform=transform_eval,
             download=download,
