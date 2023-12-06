@@ -87,6 +87,11 @@ def image_dataset_sizes(dataset):
         img_size = None
         num_channels = 3
 
+    elif dataset == "imagenetsketch":
+        num_classes = 1000
+        img_size = None
+        num_channels = 3
+
     elif dataset.startswith("imagenette"):
         num_classes = 10
         img_size = None
@@ -302,6 +307,19 @@ def fetch_image_dataset(
             root = "~/Datasets"
         root = os.path.expanduser(root)
         root = os.path.join(root, "imagenet-r")
+        dataset_train = None
+        dataset_val = None
+        dataset_test = torchvision.datasets.ImageFolder(root, transform=transform_eval)
+
+    elif dataset == "imagenetsketch":
+        # Manually download the data from links here:
+        # https://github.com/HaohanWang/ImageNet-Sketch#download-the-data
+        if root:
+            pass
+        else:
+            root = "~/Datasets"
+        root = os.path.expanduser(root)
+        root = os.path.join(root, "imagenet-sketch")
         dataset_train = None
         dataset_val = None
         dataset_test = torchvision.datasets.ImageFolder(root, transform=transform_eval)
