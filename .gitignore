@@ -13,6 +13,8 @@ slogs/
 slogs-inner/
 slrm_auto_script/
 y_pred/
+# For LSUN dataset
+_cache_*lmdb
 
 
 ##---------------------------------------------------
