@@ -169,6 +169,11 @@ def image_dataset_sizes(dataset):
         img_size = None
         num_channels = 3
 
+    elif dataset == "eurosat":
+        num_classes = 10
+        img_size = 64
+        num_channels = 3
+
     else:
         raise ValueError("Unrecognised dataset: {}".format(dataset))
 
@@ -667,6 +672,31 @@ def fetch_image_dataset(
         dataset_test = torchvision.datasets.Places365(
             root, split="val", transform=transform_eval
         )
+
+    elif dataset == "eurosat":
+        # Download from
+        # https://zenodo.org/records/7711810/files/EuroSAT_RGB.zip?download=1
+        if not root:
+            root = "~/Datasets"
+        root = os.path.expanduser(root)
+        root = os.path.join(root, "EuroSAT", "EuroSAT_RGB")
+        dataset_train = torchvision.datasets.ImageFolder(
+            root,
+            transform=transform_train,
+        )
+        dataset_test = torchvision.datasets.ImageFolder(
+            root,
+            transform=transform_eval,
+        )
+        # Need to split the dataset to create a test set ourselves as it doesn't
+        # come with any partitioning.
+        dataset_train, dataset_test = create_train_val_split(
+            dataset_train,
+            dataset_test,
+            split_rate=0.15,
+            split_seed=0,
+        )
+        dataset_val = None
 
     else:
         raise ValueError("Unrecognised dataset: {}".format(dataset))
