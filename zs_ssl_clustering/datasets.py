@@ -154,6 +154,11 @@ def image_dataset_sizes(dataset):
         img_size = None
         num_channels = 3
 
+    elif dataset == "places365":
+        num_classes = 365
+        img_size = None
+        num_channels = 3
+
     else:
         raise ValueError("Unrecognised dataset: {}".format(dataset))
 
@@ -610,6 +615,21 @@ def fetch_image_dataset(
         dataset_val = None
         dataset_test = torchvision.datasets.LSUN(
             root, classes="val", transform=transform_eval
+        )
+
+    elif dataset == "places365":
+        if root:
+            pass
+        else:
+            root = "~/Datasets"
+        root = os.path.expanduser(root)
+        root = os.path.join(root, "Places365")
+        dataset_train = torchvision.datasets.Places365(
+            root, split="train-challenge", transform=transform_train
+        )
+        dataset_val = None
+        dataset_test = torchvision.datasets.Places365(
+            root, split="val", transform=transform_eval
         )
 
     else:
