@@ -16,6 +16,9 @@ y_pred/
 # For LSUN dataset
 _cache_*lmdb
 
+# Notebooks
+*.pdf
+Untitled*.ipynb
 
 ##---------------------------------------------------
 # Continuous Integration .gitignore files
