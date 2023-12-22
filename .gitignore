@@ -17,8 +17,9 @@ y_pred/
 _cache_*lmdb
 
 # Notebooks
-*.pdf
 Untitled*.ipynb
+*.pdf
+notebooks/test_runs_df.csv
 
 ##---------------------------------------------------
 # Continuous Integration .gitignore files
