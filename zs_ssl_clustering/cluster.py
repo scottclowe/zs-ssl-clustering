@@ -121,7 +121,7 @@ def run(config):
         config.run_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     start_loading = time.time()
-    if config.model == "none":
+    if config.model in {"none", "raw"}:
         print("Using raw image pixel data instead of model embedding.", flush=True)
         from torch import nn
 
