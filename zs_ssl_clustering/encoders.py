@@ -57,20 +57,21 @@ def get_timm_encoder(model_name, pretrained=False, in_chans=3):
 
 
 class TorchVisionEncoder(nn.Module):
-    def __init__(self, model_name="resnet50"):
+    def __init__(self, model_name="resnet50", pretrained=True):
         super().__init__()
+        weights = None
         if model_name == "resnet18":
-            self.model = torchvision.models.resnet18(
-                weights=torchvision.models.ResNet18_Weights.IMAGENET1K_V1
-            )
+            if not pretrained:
+                weights = torchvision.models.ResNet18_Weights.IMAGENET1K_V1
+            self.model = torchvision.models.resnet18(weights=weights)
         elif model_name == "resnet50":
-            self.model = torchvision.models.resnet50(
-                weights=torchvision.models.ResNet50_Weights.IMAGENET1K_V2
-            )
+            if not pretrained:
+                weights = torchvision.models.ResNet50_Weights.IMAGENET1K_V2
+            self.model = torchvision.models.resnet50(weights=weights)
         elif model_name in ["vit_b_16", "vitb16"]:
-            self.model = torchvision.models.vit_b_16(
-                weights=torchvision.models.ViT_B_16_Weights.IMAGENET1K_V1,
-            )
+            if not pretrained:
+                weights = torchvision.models.ViT_B_16_Weights.IMAGENET1K_V1
+            self.model = torchvision.models.vit_b_16(weights=weights)
         else:
             raise ValueError(f"Unrecognized model: '{model_name}'.")
         if "resnet" in model_name:
@@ -224,6 +225,9 @@ def get_encoder(model_name):
 
     elif model_name.startswith("mocov3"):
         return MoCoV3(model_name)
+
+    elif model_name.startswith("random"):
+        return TorchVisionEncoder(model_name[6:].strip("_"), pretrained=False)
 
     else:
         return TorchVisionEncoder(model_name)
