@@ -802,6 +802,11 @@ def get_parser():
         default=1.0,
         help="Ratio of how much of the image to zoom in on. Default: %(default)s",
     )
+    group.add_argument(
+        "--image-size",
+        type=int,
+        help="Size of images to use as model input. Default: 224.",
+    )
     # Architecture args -------------------------------------------------------
     group = parser.add_argument_group("Architecture")
     group.add_argument(
