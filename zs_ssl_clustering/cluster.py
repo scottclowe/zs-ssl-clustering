@@ -243,6 +243,38 @@ def run(config):
             wandb.config.update({"dim_reducer_man_metric": None}, allow_val_change=True)
         reducerman_args_used = set()
 
+    elif config.dim_reducer_man == "PaCMAP":
+        if config.ndim_reduced_man is None:
+            raise ValueError(
+                f"{config.dim_reducer_man} reduction was requested, but 'ndim_reduced_man' was not set."
+            )
+
+        import pacmap
+
+        _embeddings = embeddings
+        if config.dim_reducer_man_metric == "arccos":
+            _embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+
+        start_reduce_man = time.time()
+        reducer_man = pacmap.PaCMAP(
+            n_components=config.ndim_reduced_man,
+            n_neighbors=None,  # automatically set to 10 + max(0, 15 * (log10(n_samp) - 4))
+            distance=_distance_metric_man,
+            apply_pca=False,
+            verbose=config.verbose > 0,
+            random_state=config.seed,
+        )
+        reducerman_args_used = {"dim_reducer_man_metric", "seed"}
+        print(
+            f"Fitting {reducer_man} on data shaped {_embeddings.shape}...", flush=True
+        )
+        embeddings = reducer_man.fit_transform(_embeddings, init="pca")
+        end_reduce_man = time.time()
+        results["time_reduce_man"] = end_reduce_man - start_reduce_man
+        print(
+            f"{config.dim_reducer_man} fitting time: {results['time_reduce_man']:.2f}s"
+        )
+
     elif config.dim_reducer_man == "UMAP":
         if config.ndim_reduced_man is None:
             raise ValueError(
@@ -894,7 +926,7 @@ def get_parser():
         "--dim-reducer-man",
         type=str,
         default="None",
-        choices=["None", "UMAP", "tSNE"],
+        choices=["None", "PaCMAP", "UMAP", "tSNE"],
         help="Manifold dimensionality reduction method to use. Default: %(default)s",
     )
     group.add_argument(
