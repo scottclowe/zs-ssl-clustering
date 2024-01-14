@@ -746,8 +746,16 @@ def run(config):
         f"Finished calculating performance metrics in {end_metrics - start_metrics:.1f}s"
     )
 
+    drsL = ""
+    drsR = ""
+    if config.dim_reducer is not None and config.dim_reducer != "None":
+        drsL = f"{config.dim_reducer}_{config.ndim_reduced})(" + drsL
+        drsR = drsR + ")"
+    if config.dim_reducer_man is not None and config.dim_reducer_man != "None":
+        drsL = f"{config.dim_reducer_man}_{config.ndim_reduced_man}(" + drsL
+        drsR = drsR + ")"
     print(
-        f"\n{config.clusterer_name}({config.model}({config.dataset_name}))"
+        f"\n{config.clusterer_name}({drsL}{config.model}({config.dataset_name}){drsR})"
         " evaluation results:"
     )
     for k, v in results.items():
