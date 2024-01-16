@@ -370,6 +370,7 @@ def run(config):
         # Might be more recent work to consider
         clusterer = sklearn.cluster.SpectralClustering(
             n_clusters=n_clusters_gt,
+            affinity=config.spectral_affinity,
             assign_labels=config.spectral_assigner,
             random_state=config.seed,
             verbose=config.verbose > 0,
@@ -1051,6 +1052,12 @@ def get_parser():
             "Affinity propagation's stopping criteria, number of iterations with"
             " no change in number of estimated clusters. Default: %(default)s"
         ),
+    )
+    group.add_argument(
+        "--spectral-affinity",
+        type=str,
+        default="nearest_neighbors",
+        help="Spectral clustering affinity matrix construction method. Default: %(default)s",
     )
     group.add_argument(
         "--spectral-assigner",
