@@ -665,8 +665,10 @@ def fetch_image_dataset(
             root = "~/Datasets"
         root = os.path.expanduser(root)
         root = os.path.join(root, "Places365")
+        # train-standard has 1.8M images
+        # train-challenge has 8.0M images
         dataset_train = torchvision.datasets.Places365(
-            root, split="train-challenge", transform=transform_train
+            root, split="train-standard", transform=transform_train
         )
         dataset_val = None
         dataset_test = torchvision.datasets.Places365(
