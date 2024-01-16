@@ -258,13 +258,13 @@ def run(config):
         start_reduce_man = time.time()
         reducer_man = pacmap.PaCMAP(
             n_components=config.ndim_reduced_man,
-            n_neighbors=None,  # automatically set to 10 + max(0, 15 * (log10(n_samp) - 4))
+            n_neighbors=config.dim_reducer_man_nn,  # if None, use 10 + max(0, 15 * (log10(n_samp) - 4))
             distance=_distance_metric_man,
             apply_pca=False,
             verbose=config.verbose > 0,
             random_state=config.seed,
         )
-        reducerman_args_used = {"dim_reducer_man_metric", "seed"}
+        reducerman_args_used = {"dim_reducer_man_nn", "dim_reducer_man_metric", "seed"}
         print(
             f"Fitting {reducer_man} on data shaped {_embeddings.shape}...", flush=True
         )
@@ -287,9 +287,14 @@ def run(config):
         if config.dim_reducer_man_metric == "arccos":
             _embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
 
+        if config.dim_reducer_man_nn is None:
+            # Default value is as per the guide in the UMAP documentation
+            # https://umap-learn.readthedocs.io/en/latest/clustering.html#umap-enhanced-clustering
+            config.dim_reducer_man_nn = 30
+
         start_reduce_man = time.time()
         reducer_man = umap.UMAP(
-            n_neighbors=30,
+            n_neighbors=config.dim_reducer_man_nn,
             n_components=config.ndim_reduced_man,
             min_dist=0.0,
             metric=_distance_metric_man,
@@ -297,7 +302,7 @@ def run(config):
             n_jobs=config.workers,  # Only 1 worker used if RNG is manually seeded
             verbose=config.verbose > 0,
         )
-        reducerman_args_used = {"dim_reducer_man_metric", "seed"}
+        reducerman_args_used = {"dim_reducer_man_nn", "dim_reducer_man_metric", "seed"}
         print(
             f"Fitting {reducer_man} on data shaped {_embeddings.shape}...", flush=True
         )
@@ -942,6 +947,16 @@ def get_parser():
         type=int,
         default=None,
         help="Number of dimensions to reduce the embeddings to.",
+    )
+    group.add_argument(
+        "--dim-reducer-man-nn",
+        type=int,
+        default=None,
+        help=(
+            "Number of neighbours to use when constructing the graph."
+            " For UMAP, the default is 30;"
+            " for PaCMAP, the default is 10 + max(0, 15 * (log10(n_samp) - 4))."
+        ),
     )
     group.add_argument(
         "--dim-reducer-man-metric",
