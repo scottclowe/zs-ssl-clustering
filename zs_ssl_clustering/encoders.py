@@ -61,15 +61,15 @@ class TorchVisionEncoder(nn.Module):
         super().__init__()
         weights = None
         if model_name == "resnet18":
-            if not pretrained:
+            if pretrained:
                 weights = torchvision.models.ResNet18_Weights.IMAGENET1K_V1
             self.model = torchvision.models.resnet18(weights=weights)
         elif model_name == "resnet50":
-            if not pretrained:
+            if pretrained:
                 weights = torchvision.models.ResNet50_Weights.IMAGENET1K_V2
             self.model = torchvision.models.resnet50(weights=weights)
         elif model_name in ["vit_b_16", "vitb16"]:
-            if not pretrained:
+            if pretrained:
                 weights = torchvision.models.ViT_B_16_Weights.IMAGENET1K_V1
             self.model = torchvision.models.vit_b_16(weights=weights)
         else:
