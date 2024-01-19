@@ -119,6 +119,9 @@ def get_mae_model(args):
             global_pool=args.global_pool,
         )
 
+    if not args.finetune:
+        raise ValueError("Please specify the pre-trained model path for MAE")
+
     if args.finetune and not args.eval:
         print("Loading pre-trained model from: {args.finetune}")
         checkpoint = torch.load(args.finetune, map_location="cpu")
