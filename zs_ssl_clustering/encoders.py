@@ -243,7 +243,7 @@ def get_encoder(model_name):
 def get_finetuned_encoder(model_name):
     ft_models_dir = os.path.join(REPO_DIR, "ft-models")
 
-    if model_name == "ft_mocov3_resnet50":
+    if model_name in ["ft_mocov3_resnet50", "ft_mocov3_vit_base", "ft_dino_vitb16"]:
         encoder = get_encoder(model_name[3:])
         state_dict = torch.load(
             os.path.join(ft_models_dir, model_name + ".pth"), map_location="cpu"
@@ -252,7 +252,7 @@ def get_finetuned_encoder(model_name):
         state_dict = {
             "model." + key: value
             for (key, value) in state_dict.items()
-            if not key.startswith("fc.")
+            if not key.startswith("fc.") and not key.startswith("head.")
         }
         encoder.load_state_dict(state_dict, strict=True)
         return encoder
