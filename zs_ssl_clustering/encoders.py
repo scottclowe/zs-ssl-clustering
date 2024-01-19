@@ -245,9 +245,9 @@ def get_finetuned_encoder(model_name):
 
     if model_name in ["ft_mocov3_resnet50", "ft_mocov3_vit_base", "ft_dino_vitb16"]:
         encoder = get_encoder(model_name[3:])
-        state_dict = torch.load(
-            os.path.join(ft_models_dir, model_name + ".pth"), map_location="cpu"
-        )
+        fname = os.path.join(ft_models_dir, model_name + ".pth")
+        print("Loading fine-tuned model from:", fname)
+        state_dict = torch.load(fname, map_location="cpu")
         state_dict = state_dict["model"]
         state_dict = {
             "model." + key: value
@@ -259,9 +259,9 @@ def get_finetuned_encoder(model_name):
 
     if model_name == "ft_vicreg_resnet50":
         encoder = get_encoder(model_name[3:])
-        state_dict = torch.load(
-            os.path.join(ft_models_dir, model_name + ".pth"), map_location="cpu"
-        )
+        fname = os.path.join(ft_models_dir, model_name + ".pth")
+        print("Loading fine-tuned model from:", fname)
+        state_dict = torch.load(fname, map_location="cpu")
         state_dict = state_dict["model"]
         state_dict = {
             "model." + key[2:] if key.startswith("0.") else key: value
