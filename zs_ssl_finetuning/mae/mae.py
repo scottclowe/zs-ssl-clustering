@@ -120,6 +120,7 @@ def get_mae_model(args):
         )
 
     if args.finetune and not args.eval:
+        print("Loading pre-trained model from: {args.finetune}")
         checkpoint = torch.load(args.finetune, map_location="cpu")
 
         print("Load pre-trained checkpoint from: %s" % args.finetune)
