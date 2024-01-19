@@ -7,6 +7,7 @@ checkpoints/
 checkpoints_finished
 checkpoints_working/
 embeddings*/
+ft-models/
 models/
 samples/
 slogs/

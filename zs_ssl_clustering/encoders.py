@@ -1,4 +1,6 @@
+import os
 import warnings
+from inspect import getsourcefile
 
 import timm
 import torch
@@ -7,6 +9,8 @@ from timm.data import resolve_data_config
 from torch import nn
 
 from zs_ssl_clustering.moco import moco
+
+REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(getsourcefile(lambda: 0))))
 
 
 def get_timm_encoder(model_name, pretrained=False, in_chans=3):
@@ -199,7 +203,10 @@ class MoCoV3(nn.Module):
 
 
 def get_encoder(model_name):
-    if model_name.startswith("timm"):
+    if model_name.startswith("ft_"):
+        return get_finetuned_encoder(model_name)
+
+    elif model_name.startswith("timm"):
         return TimmEncoder(model_name)
 
     elif model_name.startswith("dinov2"):
@@ -231,3 +238,37 @@ def get_encoder(model_name):
 
     else:
         return TorchVisionEncoder(model_name)
+
+
+def get_finetuned_encoder(model_name):
+    ft_models_dir = os.path.join(REPO_DIR, "ft-models")
+
+    if model_name in ["ft_mocov3_resnet50", "ft_mocov3_vit_base", "ft_dino_vitb16"]:
+        encoder = get_encoder(model_name[3:])
+        fname = os.path.join(ft_models_dir, model_name + ".pth")
+        print("Loading fine-tuned model from:", fname)
+        state_dict = torch.load(fname, map_location="cpu")
+        state_dict = state_dict["model"]
+        state_dict = {
+            "model." + key: value
+            for (key, value) in state_dict.items()
+            if not key.startswith("fc.") and not key.startswith("head.")
+        }
+        encoder.load_state_dict(state_dict, strict=True)
+        return encoder
+
+    if model_name == "ft_vicreg_resnet50":
+        encoder = get_encoder(model_name[3:])
+        fname = os.path.join(ft_models_dir, model_name + ".pth")
+        print("Loading fine-tuned model from:", fname)
+        state_dict = torch.load(fname, map_location="cpu")
+        state_dict = state_dict["model"]
+        state_dict = {
+            "model." + key[2:] if key.startswith("0.") else key: value
+            for (key, value) in state_dict.items()
+            if not key.startswith("1.")
+        }
+        encoder.load_state_dict(state_dict, strict=True)
+        return encoder
+
+    raise NotImplementedError(f"Finetuned encoder '{model_name}' not implemented.")
