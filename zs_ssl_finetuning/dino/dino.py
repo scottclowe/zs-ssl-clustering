@@ -379,7 +379,7 @@ def get_dino_model(args):
     else:
         model = torchvision.models.__dict__[args.model]()
         state_dict = torch.hub.load_state_dict_from_url(
-            url="https://dl.fbaipublicfiles.com/dino/dino_resnet50_pretrain/dino_resnet50_linearweights.pth",
+            url="https://dl.fbaipublicfiles.com/dino/dino_resnet50_pretrain/dino_resnet50_pretrain.pth",
             map_location="cpu",
         )
         model.load_state_dict(state_dict, strict=False)
