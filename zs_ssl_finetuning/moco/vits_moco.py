@@ -11,8 +11,12 @@ from operator import mul
 import torch
 import torch.nn as nn
 from timm.models.layers import PatchEmbed
-from timm.models.layers.helpers import to_2tuple
 from timm.models.vision_transformer import VisionTransformer, _cfg
+
+try:
+    from timm.layers.helpers import to_2tuple
+except ImportError:
+    from timm.models.layers.helpers import to_2tuple
 
 __all__ = [
     "vit_small",
