@@ -102,6 +102,11 @@ def image_dataset_sizes(dataset):
         img_size = None
         num_channels = 3
 
+    elif dataset.startswith("in9"):
+        num_classes = 9
+        img_size = None
+        num_channels = 3
+
     elif dataset == "mnist":
         num_classes = 10
         img_size = 28
@@ -355,6 +360,42 @@ def fetch_image_dataset(
         else:
             root = "~/Datasets/imagewoof/"
         root = os.path.expanduser(root)
+        dataset_train = torchvision.datasets.ImageFolder(
+            os.path.join(root, "train"),
+            transform=transform_train,
+        )
+        dataset_val = None
+        dataset_test = torchvision.datasets.ImageFolder(
+            os.path.join(root, "val"),
+            transform=transform_eval,
+        )
+
+    elif dataset.startswith("in9"):
+        if not root:
+            root = "~/Datasets/in9_bg_challenge/"
+        root = os.path.expanduser(root)
+        if dataset in ["in9", "in9original"]:
+            root = os.path.join(root, "original")
+        elif dataset in ["in9l", "in9large"]:
+            root = os.path.join(root, "in9l")
+        elif dataset == "in9mixednext":
+            root = os.path.join(root, "mixed_next")
+        elif dataset == "in9mixedrand":
+            root = os.path.join(root, "mixed_rand")
+        elif dataset == "in9mixedsame":
+            root = os.path.join(root, "mixed_same")
+        elif dataset == "in9nofg":
+            root = os.path.join(root, "no_fg")
+        elif dataset == "in9onlybgb":
+            root = os.path.join(root, "only_bg_b")
+        elif dataset == "in9onlybgt":
+            root = os.path.join(root, "only_bg_t")
+        elif dataset == "in9onlyfg":
+            root = os.path.join(root, "only_fg")
+        else:
+            raise ValueError(
+                f"Unrecognised imagenet-9 backgrounds challenge dataset: {dataset}"
+            )
         dataset_train = torchvision.datasets.ImageFolder(
             os.path.join(root, "train"),
             transform=transform_train,
