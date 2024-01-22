@@ -9,6 +9,7 @@ checkpoints_working/
 embeddings*/
 ft-models/
 models/
+notebooks/figs/
 samples/
 slogs/
 slogs-inner/
