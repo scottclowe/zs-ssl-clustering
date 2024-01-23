@@ -243,7 +243,12 @@ def get_encoder(model_name):
 def get_finetuned_encoder(model_name):
     ft_models_dir = os.path.join(REPO_DIR, "ft-models")
 
-    if model_name in ["ft_mocov3_resnet50", "ft_mocov3_vit_base", "ft_dino_vitb16"]:
+    if model_name in [
+        "ft_mocov3_resnet50",
+        "ft_mocov3_vit_base",
+        "ft_dino_resnet50",
+        "ft_dino_vitb16",
+    ]:
         encoder = get_encoder(model_name[3:])
         fname = os.path.join(ft_models_dir, model_name + ".pth")
         print("Loading fine-tuned model from:", fname)
