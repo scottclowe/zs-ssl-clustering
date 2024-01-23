@@ -144,7 +144,9 @@ def get_mae_model(args):
         msg = model.load_state_dict(checkpoint_model, strict=False)
         print(msg)
 
-        if args.global_pool:
+        if not msg.missing_keys:
+            print("Successfully loaded pre-trained model")
+        elif args.global_pool:
             assert set(msg.missing_keys) == {
                 "head.weight",
                 "head.bias",
