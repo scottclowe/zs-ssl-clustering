@@ -1,3 +1,9 @@
+"""
+ViT fine-tuning code.
+
+Adapted from https://github.com/facebookresearch/mae/blob/efb2a80/main_finetune.py
+"""
+
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
 

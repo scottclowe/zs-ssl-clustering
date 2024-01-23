@@ -1,3 +1,7 @@
+"""
+Adapted from https://github.com/facebookresearch/mae/blob/efb2a80/util/misc.py
+"""
+
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
 

@@ -1,3 +1,9 @@
+"""
+Position embedding utils
+
+Adapted from https://github.com/facebookresearch/mae/blob/efb2a80/util/pos_embed.py
+"""
+
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
 
