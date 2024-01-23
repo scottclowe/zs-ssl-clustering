@@ -4,11 +4,15 @@ ResNet fine-tuning code.
 Adapted from https://github.com/facebookresearch/mae/blob/efb2a80/main_finetune.py
 """
 
+# This source code is modified from code which is
 # Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
+# available under the terms of the license
+# Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+# https://github.com/facebookresearch/mae/blob/efb2a80/LICENSE
+#
+# The original source code can be found at
+# https://github.com/facebookresearch/mae/blob/efb2a80/main_finetune.py
 
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
 # --------------------------------------------------------
 # References:
 # DeiT: https://github.com/facebookresearch/deit

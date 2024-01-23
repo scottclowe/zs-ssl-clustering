@@ -2,11 +2,15 @@
 Adapted from https://github.com/facebookresearch/mae/blob/efb2a80/util/lr_sched.py
 """
 
+# This source code is
 # Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
+# distributed under the terms of the license
+# Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+# https://github.com/facebookresearch/mae/blob/efb2a80/LICENSE
+#
+# Aside from whitespace and formatting changes, this version is the same as the
+# original, which can be found at
+# https://github.com/facebookresearch/mae/blob/efb2a80/util/lr_sched.py
 
 import math
 

@@ -4,11 +4,16 @@ Position embedding utils
 Adapted from https://github.com/facebookresearch/mae/blob/efb2a80/util/pos_embed.py
 """
 
+# This source code is
 # Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
+# distributed under the terms of the license
+# Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+# https://github.com/facebookresearch/mae/blob/efb2a80/LICENSE
+#
+# Aside from whitespace and formatting changes, this version is the same as the
+# original, which can be found at
+# https://github.com/facebookresearch/mae/blob/efb2a80/util/pos_embed.py
 
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
 # --------------------------------------------------------
 # Position embedding utils
 # --------------------------------------------------------
