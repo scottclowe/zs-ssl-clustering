@@ -67,7 +67,7 @@ def run(config):
     if config.save_pred is None:
         config.save_pred = config.partition == "test"
 
-    memory_slurm = os.environ["SLURM_MEM_PER_NODE"]
+    memory_slurm = os.environ.get("SLURM_MEM_PER_NODE", None)
     if memory_slurm:
         memory_slurm = float(memory_slurm)
         config.memory_slurm = memory_slurm
