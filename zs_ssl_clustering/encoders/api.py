@@ -8,9 +8,12 @@ import torchvision
 from timm.data import resolve_data_config
 from torch import nn
 
-from zs_ssl_clustering.moco import moco
+from .moco import moco
 
-REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(getsourcefile(lambda: 0))))
+PACKAGE_DIR = os.path.dirname(
+    os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
+)
+REPO_DIR = os.path.dirname(PACKAGE_DIR)
 
 
 def get_timm_encoder(model_name, pretrained=False, in_chans=3):

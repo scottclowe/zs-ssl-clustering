@@ -5,7 +5,7 @@ from inspect import getsourcefile
 import torch
 import torchvision.models
 
-from zs_ssl_clustering.moco import vits
+from zs_ssl_clustering.encoders.moco import vits
 
 model_name_to_weights = {
     "resnet50": "r-50-1000ep.pth.tar",
