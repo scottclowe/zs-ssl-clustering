@@ -8,7 +8,7 @@ import torchvision
 from timm.data import resolve_data_config
 from torch import nn
 
-from .moco import moco
+from . import moco
 
 PACKAGE_DIR = os.path.dirname(
     os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
