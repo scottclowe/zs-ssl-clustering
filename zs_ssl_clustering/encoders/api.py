@@ -258,11 +258,11 @@ def get_finetuned_encoder(model_name):
         state_dict = torch.load(fname, map_location="cpu")
         state_dict = state_dict["model"]
         state_dict = {
-            "model." + key: value
+            key: value
             for (key, value) in state_dict.items()
             if not key.startswith("fc.") and not key.startswith("head.")
         }
-        encoder.load_state_dict(state_dict, strict=True)
+        encoder.model.load_state_dict(state_dict, strict=True)
         return encoder
 
     if model_name == "ft_vicreg_resnet50":
@@ -272,11 +272,13 @@ def get_finetuned_encoder(model_name):
         state_dict = torch.load(fname, map_location="cpu")
         state_dict = state_dict["model"]
         state_dict = {
-            "model." + key[2:] if key.startswith("0.") else key: value
+            key[2:] if key.startswith("0.") else key: value
             for (key, value) in state_dict.items()
             if not key.startswith("1.")
+            and not key.startswith("fc.")
+            and not key.startswith("head.")
         }
-        encoder.load_state_dict(state_dict, strict=True)
+        encoder.model.load_state_dict(state_dict, strict=True)
         return encoder
 
     raise NotImplementedError(f"Finetuned encoder '{model_name}' not implemented.")
