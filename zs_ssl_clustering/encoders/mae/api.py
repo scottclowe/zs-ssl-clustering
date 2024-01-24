@@ -38,6 +38,9 @@ def load_pretrained_model(
     if model_name.endswith("_cls"):
         global_pool = False
         model_name = model_name[:-4]
+    if global_pool is None:
+        global_pool = "pretrain" in model_name
+        print(f"Automatically selecting global_pool={global_pool}")
 
     model_name = model_name.replace("_base_patch16", "_base")
     model_name = model_name.replace("_large_patch16", "_large")
