@@ -1,8 +1,15 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
-# All rights reserved.
+"""
+Adapted from https://github.com/facebookresearch/moco-v3/blob/c349e6e/vits.py
+"""
 
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
+# This source code is modified from code which is
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# available under the terms of the license
+# Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+# https://github.com/facebookresearch/moco-v3/blob/c349e6e/LICENSE
+#
+# The original source code can be found at
+# https://github.com/facebookresearch/moco-v3/blob/c349e6e/vits.py
 
 import math
 from functools import partial, reduce
