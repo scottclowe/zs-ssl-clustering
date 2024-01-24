@@ -8,7 +8,7 @@ import torchvision
 from timm.data import resolve_data_config
 from torch import nn
 
-from . import moco
+from . import mae, moco
 
 PACKAGE_DIR = os.path.dirname(
     os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
@@ -205,6 +205,19 @@ class MoCoV3(nn.Module):
         return self.model(x)
 
 
+class MAE(nn.Module):
+    def __init__(self, model_name="resnet50"):
+        super().__init__()
+
+        if model_name.startswith("mae_"):
+            model_name = model_name[4:]
+        self.model = mae.load_pretrained_model(model_name)
+        self.model.head = nn.Identity()
+
+    def forward(self, x):
+        return self.model(x)
+
+
 def get_encoder(model_name):
     if model_name.startswith("ft_"):
         return get_finetuned_encoder(model_name)
@@ -235,6 +248,9 @@ def get_encoder(model_name):
 
     elif model_name.startswith("mocov3"):
         return MoCoV3(model_name)
+
+    elif model_name.startswith("mae"):
+        return MAE(model_name)
 
     elif model_name.startswith("random"):
         return TorchVisionEncoder(model_name[6:].strip("_"), pretrained=False)
