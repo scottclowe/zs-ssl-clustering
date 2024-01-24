@@ -7,16 +7,12 @@ import torchvision.models
 
 from . import vits
 
-model_name_to_weights = {
-    "resnet50": "r-50-1000ep.pth.tar",
-    "vit_small": "vit-s-300ep.pth.tar",
-    "vit_base": "vit-b-300ep.pth.tar",
-}
 model_name_to_url = {
     "resnet50": "https://dl.fbaipublicfiles.com/moco-v3/r-50-1000ep/r-50-1000ep.pth.tar",
     "vit_small": "https://dl.fbaipublicfiles.com/moco-v3/vit-s-300ep/vit-s-300ep.pth.tar",
     "vit_base": "https://dl.fbaipublicfiles.com/moco-v3/vit-b-300ep/vit-b-300ep.pth.tar",
 }
+model_name_to_weights = {k: v.split("/")[-1] for k, v in model_name_to_url.items()}
 
 MOCO_SOURCE_DIR = os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
 DEFAULT_CACHE = os.path.join(MOCO_SOURCE_DIR, ".cache")
