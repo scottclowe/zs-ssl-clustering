@@ -159,6 +159,12 @@ def image_dataset_sizes(dataset):
         img_size = None
         num_channels = 3
 
+    elif dataset == "utkface":
+        num_classes = 117
+        # There's actually fewer classes, but some ages don't appear
+        img_size = 200
+        num_channels = 3
+
     elif dataset == "dtd":
         num_classes = 47
         img_size = None
@@ -651,6 +657,27 @@ def fetch_image_dataset(
         dataset_test = torchvision.datasets.CelebA(
             root,
             target_type="identity",
+            split="test",
+            transform=transform_eval,
+            download=download,
+        )
+
+    elif dataset == "utkface":
+        from zs_ssl_clustering.dataloaders.utkface import UTKFace
+
+        if not root:
+            root = "~/Datasets"
+        root = os.path.expanduser(root)
+        # Will read from [root]/UTKFace
+        dataset_train = UTKFace(
+            root,
+            split="train",
+            transform=transform_train,
+            download=download,
+        )
+        dataset_val = None
+        dataset_test = UTKFace(
+            root,
             split="test",
             transform=transform_eval,
             download=download,
