@@ -942,6 +942,15 @@ def get_dataset_labels(dataset):
             return labels
         return np.array(labels)[dataset.indices]
 
+    if isinstance(dataset, torch.utils.data.ConcatDataset):
+        # For a concat dataset, we need to get the labels from each of the
+        # interior datasets and then concatenate them together.
+        labels = [get_dataset_labels(d) for d in dataset.datasets]
+        for labels_i in labels:
+            if labels_i is None:
+                return None
+        return np.concatenate(labels)
+
     labels = None
     if hasattr(dataset, "targets"):
         # MNIST, CIFAR, ImageFolder, etc
