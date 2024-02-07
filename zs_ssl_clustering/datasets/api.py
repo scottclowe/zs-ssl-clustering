@@ -505,7 +505,7 @@ def fetch_image_dataset(
         )
 
     elif dataset == "nabirds":
-        from zs_ssl_clustering.dataloaders.nabirds import NABirds
+        from zs_ssl_clustering.datasets.nabirds import NABirds
 
         if root:
             pass
@@ -663,7 +663,7 @@ def fetch_image_dataset(
         )
 
     elif dataset == "utkface":
-        from zs_ssl_clustering.dataloaders.utkface import UTKFace
+        from zs_ssl_clustering.datasets.utkface import UTKFace
 
         if not root:
             root = "~/Datasets"
