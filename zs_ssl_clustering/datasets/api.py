@@ -406,11 +406,18 @@ def fetch_image_dataset(
             os.path.join(root, "train"),
             transform=transform_train,
         )
-        dataset_val = None
-        dataset_test = torchvision.datasets.ImageFolder(
+        dataset_val = torchvision.datasets.ImageFolder(
             os.path.join(root, "val"),
             transform=transform_eval,
         )
+        if dataset in ["in9l", "in9large"]:
+            dataset_test = dataset_val
+            dataset_val = None
+        else:
+            dataset_test = torchvision.datasets.ImageFolder(
+                os.path.join(root, "test"),
+                transform=transform_eval,
+            )
 
     elif dataset == "mnist":
         if root:
