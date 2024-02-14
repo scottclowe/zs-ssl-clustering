@@ -414,6 +414,7 @@ def run(config):
             n_neighbors=config.spectral_n_neighbors,
             random_state=config.seed,
             verbose=config.verbose > 0,
+            n_jobs=config.workers,
         )
         clusterer_args_used = clusterer_args_used.union(
             {"seed", "spectral_affinity", "spectral_assigner"}
