@@ -362,6 +362,7 @@ def run(config):
         "affinity_conv_iter",
         "spectral_affinity",
         "spectral_assigner",
+        "spectral_n_neighbors",
         "aggclust_linkage",
         "aggclust_dist_thresh",
         "hdbscan_method",
@@ -410,12 +411,15 @@ def run(config):
             n_clusters=n_clusters_gt,
             affinity=config.spectral_affinity,
             assign_labels=config.spectral_assigner,
+            n_neighbors=config.spectral_n_neighbors,
             random_state=config.seed,
             verbose=config.verbose > 0,
         )
         clusterer_args_used = clusterer_args_used.union(
             {"seed", "spectral_affinity", "spectral_assigner"}
         )
+        if config.spectral_assigner == "nearest_neighbors":
+            clusterer_args_used.add("spectral_n_neighbors")
 
     elif config.clusterer_name == "AgglomerativeClustering":
         # Can work with specified number of clusters, as well as unknown (which requires a distance threshold)
@@ -1123,6 +1127,16 @@ def get_parser():
         default="cluster_qr",
         choices=["kmeans", "discretize", "cluster_qr"],
         help="Spectral clustering label assignment method. Default: %(default)s",
+    )
+    group.add_argument(
+        "--spectral-n-neighbors",
+        type=int,
+        default=10,
+        help=(
+            "Spectral clustering number of neighbors to use when constructing"
+            " the affinity matrix using the nearest neighbors method."
+            " Default: %(default)s"
+        ),
     )
     group.add_argument(
         "--aggclust-linkage",
