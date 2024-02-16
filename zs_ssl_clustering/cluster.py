@@ -419,7 +419,7 @@ def run(config):
         clusterer_args_used = clusterer_args_used.union(
             {"seed", "spectral_affinity", "spectral_assigner"}
         )
-        if config.spectral_assigner == "nearest_neighbors":
+        if config.spectral_affinity == "nearest_neighbors":
             clusterer_args_used.add("spectral_n_neighbors")
 
     elif config.clusterer_name == "AgglomerativeClustering":
