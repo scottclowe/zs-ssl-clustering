@@ -9,8 +9,6 @@ import tarfile
 import numpy as np
 import pandas as pd
 import PIL
-import torch
-import torchvision
 from torchvision.datasets.utils import download_file_from_google_drive
 from torchvision.datasets.vision import VisionDataset
 
