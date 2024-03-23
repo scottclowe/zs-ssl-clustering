@@ -1165,7 +1165,7 @@ def get_parser():
     group.add_argument(
         "--optics-method",
         type=str,
-        default="dbscan",
+        default="xi",
         choices=["xi", "dbscan"],
         help="OPTICS cluster extraction method. Default: %(default)s",
     )
