@@ -495,6 +495,7 @@ def run(config):
             metric=_distance_metric,
             resolution=config.louvain_resolution,
             threshold=config.louvain_threshold,
+            remove_self_loops=config.louvain_remove_self_loops,
             seed=config.seed,
             n_jobs=config.workers,
             verbose=config.verbose,
@@ -504,6 +505,7 @@ def run(config):
                 "distance_metric",
                 "louvain_resolution",
                 "louvain_threshold",
+                "louvain_remove_self_loops",
                 "seed",
                 "workers",
             }
@@ -1211,6 +1213,12 @@ def get_parser():
         type=float,
         default=1e-07,
         help="Louvain communities threshold parameter. Default: %(default)s",
+    )
+    group.add_argument(
+        "--louvain-keep-self",
+        dest="louvain_remove_self_loops",
+        action="store_false",
+        help="Keep self-loops in the graph for Louvain communities.",
     )
 
     # Hardware configuration args ---------------------------------------------
