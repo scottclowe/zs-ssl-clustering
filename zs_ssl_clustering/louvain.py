@@ -2,6 +2,8 @@
 Louvain community detection algorithm.
 """
 
+import time
+
 import networkx as nx
 import numpy as np
 import sklearn.metrics
@@ -84,6 +86,9 @@ class LouvainCommunities(ClusterMixin, BaseEstimator):
         between samples. If -1, then the number of jobs is set to the number
         of CPU cores.
 
+    verbose : int, default=0
+        Verbosity level.
+
     Attributes
     ----------
     labels_ : ndarray of shape (n_samples,)
@@ -104,6 +109,7 @@ class LouvainCommunities(ClusterMixin, BaseEstimator):
         remove_self_loops=True,
         seed=None,
         n_jobs=None,
+        verbose=0,
     ):
         self.metric = metric
         self.resolution = resolution
@@ -111,11 +117,18 @@ class LouvainCommunities(ClusterMixin, BaseEstimator):
         self.remove_self_loops = remove_self_loops
         self.seed = seed
         self.n_jobs = n_jobs
+        self.verbose = verbose
 
     def fit(self, X, y=None):
+        t0 = time.time()
         X = np.asarray(X)
         self.n_features_in_ = X.shape[1]
+        if self.verbose:
+            print("Louvain communities algorithm on data with shape", X.shape)
         # Create adjacency matrix from pairwise distances
+        if self.verbose:
+            print("  Building affinity matrix")
+        t_start_aff = time.time()
         dst = build_affinity_matrix(
             X,
             metric=self.metric,
@@ -123,17 +136,35 @@ class LouvainCommunities(ClusterMixin, BaseEstimator):
             n_jobs=self.n_jobs,
         )
         self.affinity_matrix_ = dst
+        if self.verbose:
+            dt = time.time() - t_start_aff
+            print(f"  Completed building affinity matrix in {dt:.3f}s")
         # Convert to NetworkX graph
         G = nx.from_numpy_array(dst)
         # Partition into Louvain communities
+        if self.verbose:
+            print("  Partitioning into communities using Louvain algorithm")
+        t_start_louvain = time.time()
         partition = nx.community.louvain_communities(
             G, resolution=self.resolution, threshold=self.threshold, seed=self.seed
         )
+        if self.verbose:
+            dt = time.time() - t_start_louvain
+            print(f"  Completed Louvain communities step in {dt:.3f}s")
         # Convert partitions to a label vector
+        if self.verbose:
+            print("  Converting partitions to labels vector")
+        t_start_conv_labels = time.time()
         labels = np.zeros(dst.shape[-1])
         for idx in range(len(partition)):
             community = list(partition[idx])
             labels[community] = idx
+        if self.verbose:
+            dt = time.time() - t_start_conv_labels
+            print(f"  Completed converting partitions in {dt:.3f}s")
         # Set labels_ attribute
         self.labels_ = labels
+        if self.verbose:
+            dt = time.time() - t0
+            print("Finished Louvain communities algorithm in {dt:.3f}s")
         return self

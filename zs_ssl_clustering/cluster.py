@@ -497,6 +497,7 @@ def run(config):
             threshold=config.louvain_threshold,
             seed=config.seed,
             n_jobs=config.workers,
+            verbose=config.verbose,
         )
         clusterer_args_used = clusterer_args_used.union(
             {
