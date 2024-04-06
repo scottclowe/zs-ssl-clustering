@@ -22,6 +22,7 @@ CLUSTERERS = [
     "SpectralClustering",
     "HDBSCAN",
     "OPTICS",
+    "LouvainCommunities",
 ]
 
 METRICS = [
@@ -486,6 +487,29 @@ def run(config):
         )
         if config.optics_method == "xi":
             clusterer_args_used.add("optics_xi")
+
+    elif config.clusterer_name == "LouvainCommunities":
+        from zs_ssl_clustering.louvain import LouvainCommunities
+
+        clusterer = LouvainCommunities(
+            metric=_distance_metric,
+            resolution=config.louvain_resolution,
+            threshold=config.louvain_threshold,
+            remove_self_loops=config.louvain_remove_self_loops,
+            seed=config.seed,
+            n_jobs=config.workers,
+            verbose=config.verbose,
+        )
+        clusterer_args_used = clusterer_args_used.union(
+            {
+                "distance_metric",
+                "louvain_resolution",
+                "louvain_threshold",
+                "louvain_remove_self_loops",
+                "seed",
+                "workers",
+            }
+        )
 
     else:
         raise ValueError(f"Unrecognized clusterer: '{config.clusterer_name}'")
@@ -1177,6 +1201,24 @@ def get_parser():
             "OPTICS minimum steepness, xi. Only applies when using the"
             " xi cluster method for OPTICS. Default: %(default)s"
         ),
+    )
+    group.add_argument(
+        "--louvain-resolution",
+        type=float,
+        default=1.0,
+        help="Louvain communities resolution parameter. Default: %(default)s",
+    )
+    group.add_argument(
+        "--louvain-threshold",
+        type=float,
+        default=1e-07,
+        help="Louvain communities threshold parameter. Default: %(default)s",
+    )
+    group.add_argument(
+        "--louvain-keep-self",
+        dest="louvain_remove_self_loops",
+        action="store_false",
+        help="Keep self-loops in the graph for Louvain communities.",
     )
 
     # Hardware configuration args ---------------------------------------------
