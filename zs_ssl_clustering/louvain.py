@@ -166,5 +166,5 @@ class LouvainCommunities(ClusterMixin, BaseEstimator):
         self.labels_ = labels
         if self.verbose:
             dt = time.time() - t0
-            print("Finished Louvain communities algorithm in {dt:.3f}s")
+            print(f"Finished Louvain communities algorithm in {dt:.3f}s")
         return self
