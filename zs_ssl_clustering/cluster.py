@@ -363,6 +363,7 @@ def run(config):
         "affinity_conv_iter",
         "spectral_affinity",
         "spectral_assigner",
+        "spectral_n_components",
         "spectral_n_neighbors",
         "aggclust_linkage",
         "aggclust_dist_thresh",
@@ -410,6 +411,7 @@ def run(config):
         # Might be more recent work to consider
         clusterer = sklearn.cluster.SpectralClustering(
             n_clusters=n_clusters_gt,
+            n_components=config.spectral_n_components,
             affinity=config.spectral_affinity,
             assign_labels=config.spectral_assigner,
             n_neighbors=config.spectral_n_neighbors,
@@ -418,7 +420,7 @@ def run(config):
             n_jobs=config.workers,
         )
         clusterer_args_used = clusterer_args_used.union(
-            {"seed", "spectral_affinity", "spectral_assigner"}
+            {"seed", "spectral_affinity", "spectral_assigner", "spectral_n_components"}
         )
         if config.spectral_affinity == "nearest_neighbors":
             clusterer_args_used.add("spectral_n_neighbors")
@@ -1161,6 +1163,14 @@ def get_parser():
             "Spectral clustering number of neighbors to use when constructing"
             " the affinity matrix using the nearest neighbors method."
             " Default: %(default)s"
+        ),
+    )
+    group.add_argument(
+        "--spectral-n-components",
+        type=int,
+        help=(
+            "Spectral clustering number of eigenvectors for the spectral embedding."
+            " Default: Number of clusters."
         ),
     )
     group.add_argument(
