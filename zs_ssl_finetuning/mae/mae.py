@@ -1,8 +1,19 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
+"""
+Adapted from
+- https://github.com/facebookresearch/mae/blob/efb2a80/models_vit.py
+- https://github.com/facebookresearch/mae/blob/efb2a80/main_finetune.py
+"""
 
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
+# This source code is modified from code which is
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# available under the terms of the license
+# Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+# https://github.com/facebookresearch/mae/blob/efb2a80/LICENSE
+#
+# The original source code can be found at
+# https://github.com/facebookresearch/mae/blob/efb2a80/models_vit.py
+# https://github.com/facebookresearch/mae/blob/efb2a80/main_finetune.py
+
 # --------------------------------------------------------
 # References:
 # timm: https://github.com/rwightman/pytorch-image-models/tree/master/timm
@@ -119,7 +130,11 @@ def get_mae_model(args):
             global_pool=args.global_pool,
         )
 
+    if not args.finetune:
+        raise ValueError("Please specify the pre-trained model path for MAE")
+
     if args.finetune and not args.eval:
+        print("Loading pre-trained model from: {args.finetune}")
         checkpoint = torch.load(args.finetune, map_location="cpu")
 
         print("Load pre-trained checkpoint from: %s" % args.finetune)
@@ -140,7 +155,9 @@ def get_mae_model(args):
         msg = model.load_state_dict(checkpoint_model, strict=False)
         print(msg)
 
-        if args.global_pool:
+        if not msg.missing_keys:
+            print("Successfully loaded pre-trained model")
+        elif args.global_pool:
             assert set(msg.missing_keys) == {
                 "head.weight",
                 "head.bias",
