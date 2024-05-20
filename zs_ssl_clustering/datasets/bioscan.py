@@ -109,7 +109,6 @@ class BIOSCAN(VisionDataset):
         if not self._check_exists():
             raise EnvironmentError(
                 f"{type(self).__name__} dataset not found in {self.image_dir}."
-                " You can use download=True to download it."
             )
 
         self.metadata = self._load_metadata()
