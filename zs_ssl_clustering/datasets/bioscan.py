@@ -215,9 +215,9 @@ class BIOSCAN(VisionDataset):
 
     def _partition(self, partition_name):
         if partition_name == "train":
-            partition_files = ["train_seen"]
+            partition_files = ["train_seen", "test_unseen_keys"]
         elif partition_name == "val":
-            partition_files = ["seen_keys", "val_seen", "val_unseen", "val_unseen_keys"]
+            partition_files = ["test_seen", "seen_keys", "test_unseen"]
         elif partition_name == "test":
             partition_files = [
                 "seen_keys",
