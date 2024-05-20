@@ -150,13 +150,13 @@ class BIOSCAN(VisionDataset):
             True if the dataset is already downloaded and extracted, False otherwise.
         """
         check = os.path.exists(os.path.join(self.image_dir, "part18", "4900531.jpg"))
-        check = os.path.exists(
+        check &= os.path.exists(
             os.path.join(self.image_dir, "part113", "BIOUG68114-B02.jpg")
         )
-        check = os.path.exists(
+        check &= os.path.exists(
             os.path.join(self.root, "BIOSCAN_Insect_Dataset_metadata.tsv")
         )
-        check = os.path.exists(os.path.join(self.root, "seen_keys.txt"))
+        check &= os.path.exists(os.path.join(self.root, "seen_keys.txt"))
         return check
 
     def _load_metadata(self) -> pd.DataFrame:

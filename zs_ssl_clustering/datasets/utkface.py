@@ -143,7 +143,7 @@ class UTKFace(VisionDataset):
         check = os.path.exists(
             os.path.join(self.image_dir, "1_0_0_20161219140623097.jpg.chip.jpg")
         )
-        check = os.path.exists(
+        check &= os.path.exists(
             os.path.join(self.image_dir, "1_0_0_20161219140627985.jpg.chip.jpg")
         )
         check &= os.path.exists(
