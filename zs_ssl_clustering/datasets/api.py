@@ -190,6 +190,11 @@ def image_dataset_sizes(dataset):
         img_size = 64
         num_channels = 3
 
+    elif dataset == "breakhis":
+        num_classes = 32
+        img_size = (700, 460)
+        num_channels = 3
+
     else:
         raise ValueError("Unrecognised dataset: {}".format(dataset))
 
@@ -803,6 +808,22 @@ def fetch_image_dataset(
             split_seed=0,
         )
         dataset_val = None
+
+    elif dataset == "breakhis":
+        from zs_ssl_clustering.datasets.breakhis import BreakHis
+
+        if root:
+            pass
+        else:
+            root = "~/Datasets/BreaKHis_v1"
+        root = os.path.expanduser(root)
+        dataset_train = None
+        dataset_val = None
+        dataset_test = BreakHis(
+            root,
+            target_type="tumortype-magnification",
+            transform=transform_eval,
+        )
 
     else:
         raise ValueError("Unrecognised dataset: {}".format(dataset))
