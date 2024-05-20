@@ -225,6 +225,8 @@ class BIOSCAN(VisionDataset):
                 "test_unseen",
                 "test_unseen_keys",
             ]
+        elif os.path.join(self.root, partition_name + ".txt"):
+            partition_files = [partition_name]
         else:
             raise ValueError(f"Unrecognized partition name: {partition_name}")
 
