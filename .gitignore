@@ -23,6 +23,9 @@ Untitled*.ipynb
 *.pdf
 notebooks/test_runs_df.csv
 
+# Checkpoints
+*.pth
+
 ##---------------------------------------------------
 # Continuous Integration .gitignore files
 ##---------------------------------------------------
