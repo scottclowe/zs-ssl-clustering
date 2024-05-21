@@ -101,9 +101,20 @@ def main(args):
                 y_pred = np.load(
                     os.path.join(pred_path, f"test-{dataset}__{model}__{i}.npz")
                 )["y_pred"]
-
-                og_silhouette_scores.append(silhouette_score(embeddings, y_pred))
-                umap_silhouette_scores.append(silhouette_score(umap_embeddings, y_pred))
+                try:
+                    og_silhouette_scores.append(silhouette_score(embeddings, y_pred))
+                except Exception as err:
+                    print(
+                        f"Error computing OG silhouette score with {model} {dataset} {i}: {err}"
+                    )
+                try:
+                    umap_silhouette_scores.append(
+                        silhouette_score(umap_embeddings, y_pred)
+                    )
+                except Exception as err:
+                    print(
+                        f"Error computing UMAP silhouette score with {model} {dataset} {i}: {err}"
+                    )
 
             ami_score = np.nanmedian(sdf["AMI"])
             og_silhouette_score = np.nanmedian(og_silhouette_scores)
