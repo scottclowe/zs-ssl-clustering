@@ -164,7 +164,7 @@ def image_dataset_sizes(dataset):
         img_size = None
         num_channels = 3
 
-    elif dataset == "utkface":
+    elif dataset.startswith("utkface"):
         num_classes = 117
         # There's actually fewer classes, but some ages don't appear
         img_size = 200
@@ -703,18 +703,22 @@ def fetch_image_dataset(
             download=download,
         )
 
-    elif dataset == "utkface":
+    elif dataset.startswith("utkface"):
         from zs_ssl_clustering.datasets.utkface import UTKFace
 
         if not root:
             root = "~/Datasets"
         root = os.path.expanduser(root)
+        kwargs = {}
+        if dataset != "utkface":
+            kwargs["split_rate"] = float(dataset[len("utkface") :].lstrip("-_ "))
         # Will read from [root]/UTKFace
         dataset_train = UTKFace(
             root,
             split="train",
             transform=transform_train,
             download=download,
+            **kwargs,
         )
         dataset_val = None
         dataset_test = UTKFace(
@@ -722,6 +726,7 @@ def fetch_image_dataset(
             split="test",
             transform=transform_eval,
             download=download,
+            **kwargs,
         )
 
     elif dataset == "dtd":

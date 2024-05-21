@@ -23,6 +23,8 @@ class UTKFace(VisionDataset):
         the image directory, UTKFace.
     split : str, default="train"
         The dataset partition, one of ``train``, ``test``, or ``all``.
+    split_rate : float, default=0.25
+        The size of the test split.
     target_type : str, default="age"
         Type of target to use, ``age``, ``gender``, or ``race``.
         Can also be a list to output a tuple with all specified target types.
@@ -53,6 +55,7 @@ class UTKFace(VisionDataset):
         self,
         root,
         split="train",
+        split_rate=0.25,
         target_type="age",
         transform=None,
         target_transform=None,
@@ -76,6 +79,7 @@ class UTKFace(VisionDataset):
         self.metadata = None
         self.root = root
         self.image_dir = os.path.expanduser(os.path.join(self.root, self.base_folder))
+        self.split_rate = split_rate
         self.download = download
 
         self.split = split
@@ -245,11 +249,10 @@ class UTKFace(VisionDataset):
         # alphabetically by filename, and then by age, this will be a stratified
         # split not just by age but also by gender and race as much as possible
         # as a sub-stratification of age.
-        split_rate = 0.25
-        n_test = int(split_rate * len(self.metadata))
+        n_test = int(self.split_rate * len(self.metadata))
         test_indices = np.linspace(
-            int(0.5 / split_rate),
-            len(self.metadata) - 1 - int(0.5 / split_rate),
+            int(0.5 / self.split_rate),
+            len(self.metadata) - 1 - int(0.5 / self.split_rate),
             n_test,
         )
         test_indices = np.round(test_indices)
