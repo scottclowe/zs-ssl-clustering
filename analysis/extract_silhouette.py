@@ -183,12 +183,12 @@ if __name__ == "__main__":
     parser.add_argument("--output_dir", default=".", type=str)
     parser.add_argument(
         "--feature_path",
-        default="C:/Users/aaulab/Downloads/ZS_SSL_Embeddings/zs_ssl_test-UMAP",
+        default="embeddings/test__z1.0",
         type=str,
     )
     parser.add_argument(
         "--prediction_path",
-        default="C:/Users/aaulab/Downloads/zsc_neurips/y_pred(2)/y_pred/test__z1.0",
+        default="y_pred/test__z1.0",
         type=str,
     )
 
