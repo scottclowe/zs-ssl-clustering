@@ -43,6 +43,7 @@ def main(args):
     res_dict = {
         "dataset": [],
         "backbone": [],
+        "encoder": [],
         "encoder-mode": [],
         "finetuned": [],
         "clusterer": [],
@@ -149,6 +150,7 @@ def main(args):
 
             res_dict["dataset"].append(dataset)
             res_dict["backbone"].append(d_backbone)
+            res_dict["encoder"].append(model)
             res_dict["encoder-mode"].append(mode)
             res_dict["clusterer"].append(clusterer)
             res_dict["AMI"].append(ami_score)
