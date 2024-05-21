@@ -3,4 +3,4 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.isort]
-src_paths = ["zs_ssl_clustering"]
+src_paths = ["analysis", "zs_ssl_clustering", "zs_ssl_finetuning", "zs_ssl_probing"]
