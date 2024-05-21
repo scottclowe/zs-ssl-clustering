@@ -39,8 +39,8 @@ repos:
       - id: nbqa-isort
         args: ["--profile=black"]
       - id: nbqa-black
-        exclude: ^notebooks/results\.ipynb
         args:
+            - "--line-length=140"
             - "--target-version=py37"
             - "--target-version=py38"
             - "--target-version=py39"
