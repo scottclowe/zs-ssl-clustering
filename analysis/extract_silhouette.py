@@ -87,6 +87,9 @@ def main(args):
         }
 
         for clusterer in CLUSTERERS:
+            if model not in BEST_PARAMS[clusterer]:
+                print(f"Skipping {model} for {clusterer}")
+                continue
             sdf = select_rows(test_runs_df, filter, allow_missing=False)
             filter2 = dict(DEFAULT_PARAMS["all"], **BEST_PARAMS[clusterer][model])
             filter2 = {k: v for k, v in filter2.items() if k not in filter}
