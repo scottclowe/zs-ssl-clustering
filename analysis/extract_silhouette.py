@@ -120,16 +120,9 @@ def main(args):
             og_silhouette_score = np.nanmedian(og_silhouette_scores)
             umap_silhouette_score = np.nanmedian(umap_silhouette_scores)
 
-            if (
-                "resnet50" in model
-                or "resnet" in model
-                or "RN" in model
-                or "ResNet" in model
-            ):
+            if "resnet" in model.lower() or "RN" in model:
                 d_backbone = "ResNet"
-            elif (
-                "vit" in model or "vitb" in model or "vit-b" in model or "ViT" in model
-            ):
+            elif "vit" in model.lower():
                 d_backbone = "ViT"
             elif "none" in model:
                 d_backbone = "none"
