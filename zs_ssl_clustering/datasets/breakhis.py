@@ -20,8 +20,10 @@ class BreakHis(VisionDataset):
         If True, creates dataset from training set, otherwise creates from
         test set.
     target_type : str, optional
-        Type of target to use. One of ``"malignancy"`` (tumor class),
-        ``tumor`` (tumor type), ``slide`` (slide id), ``magnification``.
+        Type of target to use. One of ``"malignancy"`` (binary tumor class),
+        ``tumor`` (tumor type), ``slide`` (slide id), ``magnification``, or
+        ``tumor-magnification`` (a class for each pair of tumor type and
+        magnification).
     transform : callable, optional
         A function/transform that  takes in an PIL image and returns a
         transformed version. e.g, ``transforms.RandomCrop``
