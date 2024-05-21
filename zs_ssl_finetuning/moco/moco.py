@@ -2,11 +2,12 @@ import os
 import urllib.request
 from inspect import getsourcefile
 
-import moco.vits_moco as vits
 import torch
 import torch.nn as nn
 import torchvision.models
 from timm.models.layers import trunc_normal_
+
+import moco.vits_moco as vits
 
 model_name_to_weights = {
     "resnet50": "r-50-1000ep.pth.tar",

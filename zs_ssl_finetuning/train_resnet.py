@@ -29,14 +29,15 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
+import wandb
+from timm.data.mixup import Mixup
+from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
+
 import util.lr_decay as lrd
 import util.misc as misc
-import wandb
 from dino.dino import get_dino_model
 from engine_finetune import evaluate, train_one_epoch
 from moco.moco import get_moco_model
-from timm.data.mixup import Mixup
-from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 from util.datasets import build_dataset
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
 from vicreg.vicreg import get_vicreg_model

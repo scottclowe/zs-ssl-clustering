@@ -22,10 +22,11 @@ import sys
 from typing import Iterable, Optional
 
 import torch
-import util.lr_sched as lr_sched
-import util.misc as misc
 from timm.data import Mixup
 from timm.utils import accuracy
+
+import util.lr_sched as lr_sched
+import util.misc as misc
 
 
 def train_one_epoch(

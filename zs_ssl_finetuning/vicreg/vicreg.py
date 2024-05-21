@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
-import vicreg.resnet as resnet
 from timm.models.layers import trunc_normal_
+
+import vicreg.resnet as resnet
 
 
 def get_vicreg_model(args):
