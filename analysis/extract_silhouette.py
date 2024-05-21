@@ -7,13 +7,8 @@ import pandas as pd
 import umap
 from sklearn.metrics import silhouette_score
 
-from param_setup import (
-    DEFAULT_PARAMS,
-    fetch_results,
-    get_best_params,
-    setup_best_params,
-)
-from utils import fixup_filter, select_rows
+from param_setup import DEFAULT_PARAMS, get_best_params, setup_best_params
+from utils import fetch_results, fixup_filter, select_rows
 
 
 def main(args):
