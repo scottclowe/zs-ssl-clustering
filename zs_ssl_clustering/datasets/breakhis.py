@@ -32,6 +32,7 @@ class BreakHis(VisionDataset):
     """
 
     base_folder = os.path.join("histology_slides", "breast")
+    EXPECTED_SAMPLE_COUNT = 7_909
     labels_malignancy = ["B", "M"]
     labels_tumortype = ["A", "F", "PT", "TA", "DC", "LC", "MC", "PC"]
     labels_magnification = [40, 100, 200, 400]
@@ -215,7 +216,7 @@ class BreakHis(VisionDataset):
             if file.startswith("SOB_") and file.endswith(".png")
         ]
         # Check we have found all the images
-        assert len(image_paths) == 7909
+        assert len(image_paths) == self.EXPECTED_SAMPLE_COUNT
         # Sort alphabetically so the order is consistent
         image_paths = sorted(image_paths)
         self.image_paths = image_paths
