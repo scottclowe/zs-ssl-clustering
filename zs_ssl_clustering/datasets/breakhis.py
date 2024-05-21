@@ -147,6 +147,29 @@ class BreakHis(VisionDataset):
             )
 
         self._build_metadata()
+        if len(self.target_type) == 0:
+            self.targets = None
+        elif len(self.target_type) == 1:
+            # Add a ``targets`` attribute so other functions can find and use it
+            t = self.target_type[0]
+            if t in [
+                "tumortype-magnification",
+                "magnification-tumortype",
+                "tumormagnification",
+            ]:
+                # Encodes the joint of tumortype and magnification
+                t = "tumormagnification"
+            elif t in ["malignant", "malignancy"]:
+                t = "malignancy"
+            elif t in ["tumor", "tumortype", "type"]:
+                t = "tumortype"
+            elif t == "magnification":
+                t = "magnification"
+            elif t in ["slideid", "slide_id"]:
+                t = "slideid"
+            else:
+                raise ValueError(f'Target type "{t}" is not recognized.')
+            self.targets = getattr(self, f"{t}_indices")
 
     def __len__(self):
         return len(self.image_paths)
@@ -157,12 +180,13 @@ class BreakHis(VisionDataset):
 
         target = []
         for t in self.target_type:
-            if t in ["tumortype-magnification", "magnification-tumortype"]:
+            if t in [
+                "tumortype-magnification",
+                "magnification-tumortype",
+                "tumormagnification",
+            ]:
                 # Encodes the joint of tumortype and magnification
-                target.append(
-                    self.magnification_indices[index] * len(self.labels_tumortype)
-                    + self.tumortype_indices[index]
-                )
+                target.append(self.tumormagnification_indices[index])
             elif t in ["malignant", "malignancy"]:
                 target.append(self.malignancy_indices[index])
             elif t in ["tumor", "tumortype", "type"]:
@@ -259,3 +283,10 @@ class BreakHis(VisionDataset):
             self.labels_magnification.index(k) for k in self.magnifications
         ]
         self.slideid_indices = [self.labels_slideid.index(k) for k in self.slideids]
+        # Add an extra series which encodes the joint of tumortype and magnification
+        self.tumormagnification_indices = [
+            mag_idx * len(self.labels_tumortype) + tumor_idx
+            for mag_idx, tumor_idx in zip(
+                self.magnification_indices, self.tumortype_indices
+            )
+        ]
