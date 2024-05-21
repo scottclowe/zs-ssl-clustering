@@ -817,13 +817,25 @@ def fetch_image_dataset(
         else:
             root = "~/Datasets/BreaKHis_v1"
         root = os.path.expanduser(root)
-        dataset_train = None
-        dataset_val = None
+        dataset_train = BreakHis(
+            root,
+            target_type="tumortype-magnification",
+            transform=transform_train,
+        )
         dataset_test = BreakHis(
             root,
             target_type="tumortype-magnification",
             transform=transform_eval,
         )
+        # Need to split the dataset to create a test set ourselves as it doesn't
+        # come with any partitioning.
+        dataset_train, dataset_test = create_train_val_split(
+            dataset_train,
+            dataset_test,
+            split_rate=0.40,
+            split_seed=0,
+        )
+        dataset_val = None
 
     else:
         raise ValueError("Unrecognised dataset: {}".format(dataset))
