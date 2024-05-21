@@ -12,6 +12,7 @@ from param_setup import (
     setup_best_params,
 )
 from sklearn.metrics import silhouette_score
+
 from utils import fixup_filter, select_rows
 
 
@@ -135,6 +136,8 @@ def main(args):
                 mode = "mae"
                 if "global" in model.lower():
                     mode += "-global"
+                if "cls" in model.lower():
+                    mode += "-cls"
             elif "moco" in model.lower():
                 mode = "mocov3"
             elif "dino" in model.lower():
