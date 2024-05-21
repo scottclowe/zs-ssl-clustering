@@ -170,6 +170,7 @@ def main(args):
         pred_df = pred_df.sort_values(
             by=["dataset", "backbone", "encoder-mode", "finetuned"]
         )
+        os.makedirs(args.output_dir, exist_ok=True)
         pred_df.to_csv(
             os.path.join(
                 args.output_dir,
