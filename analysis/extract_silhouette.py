@@ -4,6 +4,7 @@ import pickle
 
 import numpy as np
 import pandas as pd
+import tqdm
 import umap
 from sklearn.metrics import silhouette_score
 
@@ -53,10 +54,7 @@ def main(args):
     }
 
     total_files = len(os.listdir(feat_path))
-    for f_idx, f in enumerate(os.listdir(feat_path)):
-        if f_idx % 100 == 0:
-            print(f"{f_idx} / {total_files}")
-
+    for f in tqdm.tqdm(os.listdir(feat_path), total=total_files):
         if "clip" in f:
             continue
 
