@@ -49,7 +49,6 @@ def main(args):
         "finetuned": [],
         "clusterer": [],
         "AMI": [],
-        "OG-S": [],
         "UMAP-S": [],
     }
 
@@ -98,18 +97,11 @@ def main(args):
             sdf = select_rows(sdf, filter2, allow_missing=False)
             ids = sdf["id"].values
 
-            og_silhouette_scores = []
             umap_silhouette_scores = []
             for i in ids:
                 y_pred = np.load(
                     os.path.join(pred_path, f"test-{dataset}__{model}__{i}.npz")
                 )["y_pred"]
-                try:
-                    og_silhouette_scores.append(silhouette_score(embeddings, y_pred))
-                except Exception as err:
-                    print(
-                        f"Error computing OG silhouette score with {model} {dataset} {i}: {err}"
-                    )
                 try:
                     umap_silhouette_scores.append(
                         silhouette_score(umap_embeddings, y_pred)
@@ -120,7 +112,6 @@ def main(args):
                     )
 
             ami_score = np.nanmedian(sdf["AMI"])
-            og_silhouette_score = np.nanmedian(og_silhouette_scores)
             umap_silhouette_score = np.nanmedian(umap_silhouette_scores)
 
             if "resnet" in model.lower() or "RN" in model:
@@ -161,7 +152,6 @@ def main(args):
             res_dict["encoder-mode"].append(mode)
             res_dict["clusterer"].append(clusterer)
             res_dict["AMI"].append(ami_score)
-            res_dict["OG-S"].append(og_silhouette_score)
             res_dict["UMAP-S"].append(umap_silhouette_score)
 
             if "ft" in model.lower() or "finetuned" in model.lower():
