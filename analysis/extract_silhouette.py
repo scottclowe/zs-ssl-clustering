@@ -54,7 +54,7 @@ def main(args):
     }
 
     total_files = len(os.listdir(feat_path))
-    for f in tqdm.tqdm(os.listdir(feat_path), total=total_files):
+    for i_file, f in tqdm.tqdm(enumerate(os.listdir(feat_path)), total=total_files):
         if "clip" in f:
             continue
 
@@ -167,18 +167,18 @@ def main(args):
             else:
                 res_dict["finetuned"].append("N")
 
-        pred_df = pd.DataFrame.from_dict(res_dict)
-        pred_df = pred_df.sort_values(
-            by=["dataset", "backbone", "encoder-mode", "finetuned"]
-        )
-        os.makedirs(args.output_dir, exist_ok=True)
-        pred_df.to_csv(
-            os.path.join(
-                args.output_dir,
-                "silhouette_results.csv",
-            ),
-            index=False,
-        )
+        if i_file % 50 == 0:
+            print("Saving intermediate results")
+            pred_df = pd.DataFrame.from_dict(res_dict)
+            pred_df = pred_df.sort_values(
+                by=["dataset", "backbone", "encoder-mode", "finetuned"]
+            )
+            os.makedirs(args.output_dir, exist_ok=True)
+            pred_df.to_csv(
+                os.path.join(args.output_dir, "silhouette_results.csv"),
+                index=False,
+            )
+            print("Saved intermediate results")
 
 
 if __name__ == "__main__":
