@@ -83,6 +83,7 @@ def main(args):
         filter = {
             "model": model,
             "dataset": dataset,
+            "predictions_dir": "y_pred",
         }
 
         for clusterer in CLUSTERERS:
