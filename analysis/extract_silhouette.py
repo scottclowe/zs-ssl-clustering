@@ -53,8 +53,9 @@ def main(args):
         "UMAP-S": [],
     }
 
-    total_files = len(os.listdir(feat_path))
-    for i_file, f in tqdm.tqdm(enumerate(os.listdir(feat_path)), total=total_files):
+    feat_paths = os.listdir(feat_path)
+
+    for i_file, f in tqdm.tqdm(enumerate(feat_paths), total=len(feat_paths)):
         if "clip" in f:
             continue
 
@@ -167,8 +168,10 @@ def main(args):
             else:
                 res_dict["finetuned"].append("N")
 
-        if i_file % 50 == 0:
+        if i_file % 50 == 0 or i_file == len(feat_paths) - 1:
             print("Saving intermediate results")
+            status = "intermediate" if i_file != len(feat_paths) - 1 else "final"
+            print(f"Saving {status} results")
             pred_df = pd.DataFrame.from_dict(res_dict)
             pred_df = pred_df.sort_values(
                 by=["dataset", "backbone", "encoder-mode", "finetuned"]
@@ -178,7 +181,7 @@ def main(args):
                 os.path.join(args.output_dir, "silhouette_results.csv"),
                 index=False,
             )
-            print("Saved intermediate results")
+            print(f"Saved {status} results")
 
 
 if __name__ == "__main__":
