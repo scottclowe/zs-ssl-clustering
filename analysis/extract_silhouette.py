@@ -1,6 +1,7 @@
 import argparse
 import os
 import pickle
+import random
 
 import numpy as np
 import pandas as pd
@@ -23,6 +24,11 @@ def main(args):
         with open("config_keys.txt", "rb") as f:
             config_keys = pickle.load(f)
             print(config_keys)
+
+    if args.seed is not None:
+        # Seed RNG state for reproducibility
+        random.seed(args.seed)
+        np.random.seed(args.seed % 0xFFFF_FFFF)
 
     test_runs_df = test_runs_df[test_runs_df["predictions_dir"] == "y_pred"]
 
