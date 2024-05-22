@@ -39,8 +39,6 @@ def main(args):
     feat_path = args.feature_path
     pred_path = args.prediction_path
 
-    os.makedirs(args.output_dir, exist_ok=True)
-
     res_dict = {
         "dataset": [],
         "backbone": [],
@@ -52,16 +50,36 @@ def main(args):
         "UMAP-S": [],
     }
 
-    feat_paths = os.listdir(feat_path)
+    if os.path.isfile(pred_path):
+        id = int(os.path.splitext(os.path.basename(pred_path))[0].split("__")[-1])
+        rows = test_runs_df[test_runs_df["id"] == id]
+        if len(rows) == 0:
+            raise ValueError(f"ID {id} not found in test_runs.csv")
+        if len(rows) != 1:
+            print(rows)
+            raise ValueError(f"ID {id} found multiple times in test_runs.csv")
+        row = rows.iloc[0]
+        feat_paths = [f"{row['dataset_name']}__{row['model']}.npz"]
+    elif os.path.isdir(pred_path):
+        feat_paths = os.listdir(feat_path)
+        if not args.output_csv:
+            import datetime
 
-    for i_file, f in tqdm.tqdm(enumerate(feat_paths), total=len(feat_paths)):
+            dtstr = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            args.output_csv = f"silhouette_scores_{dtstr}.csv"
+    else:
+        raise ValueError(f"Invalid path: {pred_path}")
+
+    for i_file, f in tqdm.tqdm(
+        enumerate(feat_paths), total=len(feat_paths), disable=len(feat_paths) == 1
+    ):
         if "clip" in f:
             continue
 
         dataset = f.split("_")[0]
         model = f[len(dataset) + 2 : -4]
 
-        if dataset in ["imagenette", "imagewoof"]:
+        if len(feat_paths) > 1 and dataset in ["imagenette", "imagewoof"]:
             continue
 
         data = np.load(os.path.join(feat_path, f))
@@ -78,6 +96,26 @@ def main(args):
         )
 
         umap_embeddings = reducer_man.fit_transform(embeddings)
+
+        if os.path.isfile(pred_path):
+            if not args.perfile_output_dir:
+                raise ValueError(
+                    "perfile_output_dir must be specified if prediction_path is a file"
+                )
+            pred_file = pred_path
+            y_pred = np.load(pred_file)["y_pred"]
+            print("Computing silhouette score")
+            umap_score = silhouette_score(umap_embeddings, y_pred)
+            outfname = os.path.join(
+                args.perfile_output_dir,
+                os.path.splitext(os.path.basename(pred_file))[0] + ".txt",
+            )
+            print(f"Writing silhouette score to {outfname}")
+            if os.path.dirname(outfname):
+                os.makedirs(os.path.dirname(outfname), exist_ok=True)
+            with open(outfname, "w") as hf:
+                hf.write(f"{umap_score}\n")
+            return umap_score
 
         filter = {
             "model": model,
@@ -99,17 +137,26 @@ def main(args):
 
             umap_silhouette_scores = []
             for i in ids:
-                y_pred = np.load(
-                    os.path.join(pred_path, f"test-{dataset}__{model}__{i}.npz")
-                )["y_pred"]
+                pred_file = os.path.join(pred_path, f"test-{dataset}__{model}__{i}.npz")
+                if not os.path.isfile(pred_file):
+                    continue
+                y_pred = np.load(pred_file)["y_pred"]
                 try:
-                    umap_silhouette_scores.append(
-                        silhouette_score(umap_embeddings, y_pred)
-                    )
+                    umap_score = silhouette_score(umap_embeddings, y_pred)
                 except Exception as err:
                     print(
-                        f"Error computing UMAP silhouette score with {model} {dataset} {i}: {err}"
+                        f"Error computing UMAP silhouette score for {pred_file}: {err}"
                     )
+                    continue
+                if args.perfile_output_dir:
+                    outfname = os.path.join(
+                        args.perfile_output_dir,
+                        os.path.splitext(os.path.basename(pred_file))[0] + ".txt",
+                    )
+                    if os.path.dirname(outfname):
+                        os.makedirs(os.path.dirname(outfname), exist_ok=True)
+                    with open(outfname, "w") as hf:
+                        hf.write(f"{umap_score}\n")
 
             ami_score = np.nanmedian(sdf["AMI"])
             umap_silhouette_score = np.nanmedian(umap_silhouette_scores)
@@ -159,19 +206,13 @@ def main(args):
             else:
                 res_dict["finetuned"].append("N")
 
-        if i_file % 50 == 0 or i_file == len(feat_paths) - 1:
-            print("Saving intermediate results")
+        if args.output_csv:  # and (i_file % 50 == 0 or i_file == len(feat_paths) - 1):
             status = "intermediate" if i_file != len(feat_paths) - 1 else "final"
             print(f"Saving {status} results")
             pred_df = pd.DataFrame.from_dict(res_dict)
-            pred_df = pred_df.sort_values(
-                by=["dataset", "backbone", "encoder-mode", "finetuned"]
-            )
-            os.makedirs(args.output_dir, exist_ok=True)
-            pred_df.to_csv(
-                os.path.join(args.output_dir, "silhouette_results.csv"),
-                index=False,
-            )
+            if os.path.dirname(args.output_csv):
+                os.makedirs(os.path.dirname(args.output_csv), exist_ok=True)
+            pred_df.to_csv(args.output_csv, index=False)
             print(f"Saved {status} results")
 
 
@@ -182,7 +223,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument("--test_run_path", default="./test_runs.csv", type=str)
-    parser.add_argument("--output_dir", default=".", type=str)
+    parser.add_argument("--output_csv", type=str)
     parser.add_argument(
         "--feature_path",
         default="embeddings/test__z1.0",
@@ -191,6 +232,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--prediction_path",
         default="y_pred/test__z1.0",
+        type=str,
+    )
+    parser.add_argument(
+        "--perfile_output_dir",
+        default="ss_umap/test__z1.0",
         type=str,
     )
 
