@@ -171,9 +171,18 @@ class BIOSCAN5M(VisionDataset):
             True if the dataset is already downloaded and extracted, False otherwise.
         """
         check = os.path.exists(os.path.join(self.root, "BIOSCAN-5M_Dataset.csv"))
-        check &= os.path.exists(os.path.join(self.image_dir, "cropped_resized_part1"))
-        check &= os.path.exists(os.path.join(self.image_dir, "cropped_resized_part2"))
-        check &= os.path.exists(os.path.join(self.image_dir, "cropped_resized_part99"))
+        if "image" in self.modality:
+            # Only check the images exist if the images folder exists,
+            # as the user might only be interested in the DNA data
+            check &= os.path.exists(
+                os.path.join(self.image_dir, "cropped_resized_part1")
+            )
+            check &= os.path.exists(
+                os.path.join(self.image_dir, "cropped_resized_part2")
+            )
+            check &= os.path.exists(
+                os.path.join(self.image_dir, "cropped_resized_part99")
+            )
         return check
 
     def _load_metadata(self) -> pd.DataFrame:
