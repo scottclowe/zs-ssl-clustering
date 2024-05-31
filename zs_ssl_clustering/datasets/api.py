@@ -132,7 +132,7 @@ def image_dataset_sizes(dataset):
         img_size = 256
         num_channels = 3
 
-    elif dataset == "bioscan5m":
+    elif dataset.startswith("bioscan5m"):
         num_classes = 11847
         img_size = None
         num_channels = 3
@@ -550,7 +550,7 @@ def fetch_image_dataset(
             transform=transform_eval,
         )
 
-    elif dataset == "bioscan5m":
+    elif dataset.startswith("bioscan5m"):
         from zs_ssl_clustering.datasets.bioscan5m import BIOSCAN5M
 
         if root:
@@ -558,23 +558,33 @@ def fetch_image_dataset(
         else:
             root = "~/Datasets/BIOSCAN-5M"
         root = os.path.expanduser(root)
+        extra_args = {}
+        if dataset == "bioscan5mperbarcode":
+            extra_args["reduce_repeated_barcodes"] = True
+        elif dataset != "bioscan5m":
+            raise ValueError(
+                "Unrecognised BIOSCAN-5M dataset variant: {}".format(dataset)
+            )
         dataset_train = BIOSCAN5M(
             root,
             split="train",
             modality="image",
             transform=transform_train,
+            **extra_args,
         )
         dataset_val = BIOSCAN5M(
             root,
             split="val",
             modality="image",
             transform=transform_eval,
+            **extra_args,
         )
         dataset_test = BIOSCAN5M(
             root,
             split="test",
             modality="image",
             transform=transform_eval,
+            **extra_args,
         )
 
     elif dataset == "nabirds":
@@ -932,16 +942,26 @@ def fetch_dataset(
     dataset : torch.utils.data.Dataset or tuple
         The dataset object or tuple of dataset objects.
     """
-    if partition is not None and dataset == "bioscan5m":
+    dataset = dataset.lower().replace("-", "").replace("_", "").replace(" ", "")
+
+    if partition is not None and dataset.startswith("bioscan5m"):
         from zs_ssl_clustering.datasets.bioscan5m import BIOSCAN5M
 
         root = root if root else "~/Datasets/BIOSCAN-5M"
         root = os.path.expanduser(root)
+        extra_args = {}
+        if dataset == "bioscan5mperbarcode":
+            extra_args["reduce_repeated_barcodes"] = True
+        elif dataset != "bioscan5m":
+            raise ValueError(
+                "Unrecognised BIOSCAN-5M dataset variant: {}".format(dataset)
+            )
         dataset = BIOSCAN5M(
             root,
             split=partition,
             modality=modality,
             transform=transform_train,
+            **extra_args,
         )
         return dataset
 
