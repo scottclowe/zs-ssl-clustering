@@ -114,9 +114,18 @@ def run(config):
     print(f"Saved embeddings in {time.time() - t1:.2f}s")
 
 
-def make_dataloader(config, use_cuda=False):
+def make_dataloader(config, **kwargs):
+    if config.modality == "image":
+        return make_image_dataloader(config, **kwargs)
+    elif config.modality == "dna":
+        return make_dna_dataloader(config, **kwargs)
+    else:
+        raise ValueError(f"Unrecognized modality: {config.modality}")
+
+
+def make_image_dataloader(config, use_cuda=False):
     r"""
-    Create a dataloader for a given partition of a dataset.
+    Create a dataloader for a given partition of an image dataset.
 
     Parameters
     ----------
@@ -153,32 +162,13 @@ def make_dataloader(config, use_cuda=False):
     }
     if config.partition == "val":
         dataset_args["prototyping"] = True
-    (
-        dataset_train,
-        dataset_val,
-        dataset_test,
-        distinct_val_test,
-    ) = datasets.fetch_dataset(
+    dataset = datasets.fetch_dataset(
         **dataset_args,
+        partition=config.partition,
+        modality=config.modality,
         transform_train=transform_eval,
         transform_eval=transform_eval,
     )
-    if config.partition == "train":
-        dataset = dataset_train
-    elif config.partition == "val":
-        dataset = dataset_val
-    elif config.partition == "test":
-        dataset = dataset_test
-    elif config.partition == "train+test":
-        dataset = torch.utils.data.ConcatDataset([dataset_train, dataset_test])
-    elif config.partition == "all":
-        if distinct_val_test:
-            datalist = [dataset_train, dataset_val, dataset_test]
-        else:
-            datalist = [dataset_train, dataset_test]
-        dataset = torch.utils.data.ConcatDataset(datalist)
-    else:
-        raise ValueError(f"Unrecognized partition name: {config.partition}")
 
     # Dataloader --------------------------------------------------------------
     dl_kwargs = {
@@ -188,6 +178,64 @@ def make_dataloader(config, use_cuda=False):
         "shuffle": False,
         "worker_init_fn": utils.worker_seed_fn,
     }
+    if use_cuda:
+        cuda_kwargs = {"num_workers": config.workers, "pin_memory": True}
+        dl_kwargs.update(cuda_kwargs)
+
+    dataloader = torch.utils.data.DataLoader(dataset, **dl_kwargs)
+
+    return dataloader
+
+
+def make_dna_dataloader(config, use_cuda=False):
+    r"""
+    Create a dataloader for a given partition of a DNA dataset.
+
+    Parameters
+    ----------
+    config : argparse.Namespace or OmegaConf
+        The configuration for this experiment.
+    use_cuda : bool, default=False
+        Whether to use CUDA.
+
+    Returns
+    -------
+    dataloader : torch.utils.data.DataLoader
+        The dataloader for the dataset.
+    """
+    # Transforms --------------------------------------------------------------
+    transform_eval = data_transformations.get_dna_transform()
+
+    # Dataset -----------------------------------------------------------------
+    dataset_args = {
+        "dataset": config.dataset_name,
+        "root": getattr(config, "data_dir", None),
+        "download": getattr(config, "allow_download_dataset", False),
+    }
+    if config.partition == "val":
+        dataset_args["prototyping"] = True
+    dataset = datasets.fetch_dataset(
+        **dataset_args,
+        partition=config.partition,
+        modality=config.modality,
+        transform_train=transform_eval,
+        transform_eval=transform_eval,
+    )
+
+    # Dataloader --------------------------------------------------------------
+    dl_kwargs = {
+        "batch_size": getattr(config, "batch_size_per_gpu", 128),
+        "drop_last": False,
+        "sampler": None,
+        "shuffle": False,
+        "worker_init_fn": utils.worker_seed_fn,
+    }
+    if dl_kwargs["batch_size"] != 1:
+        warnings.warn(
+            "Batch size is not 1, which may lead to embeddings containing padding tokens.",
+            UserWarning,
+            stacklevel=2,
+        )
     if use_cuda:
         cuda_kwargs = {"num_workers": config.workers, "pin_memory": True}
         dl_kwargs.update(cuda_kwargs)
@@ -290,6 +338,12 @@ def get_parser():
         type=str,
         default="cifar10",
         help="Name of the dataset to learn. Default: %(default)s",
+    )
+    group.add_argument(
+        "--modality",
+        type=str,
+        default="image",
+        help="Which data modality from the dataset to use. Default: %(default)s",
     )
     group.add_argument(
         "--partition",

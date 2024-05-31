@@ -25,3 +25,12 @@ def get_transform(
     steps.append(transforms.Normalize(mean=torch.tensor(mean), std=torch.tensor(std)))
     transform = transforms.Compose(steps)
     return transform
+
+
+def get_dna_transform(max_len=660, strip_trailing_n=True):
+    steps = [
+        transforms.Lambda(lambda x: x[:max_len]),
+        transforms.Lambda(lambda x: x.strip("N") if strip_trailing_n else x),
+    ]
+    transform = transforms.Compose(steps)
+    return transform

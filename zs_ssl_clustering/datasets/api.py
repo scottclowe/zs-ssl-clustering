@@ -878,6 +878,8 @@ def fetch_image_dataset(
 def fetch_dataset(
     dataset,
     root=None,
+    partition=None,
+    modality="image",
     prototyping=False,
     transform_train=None,
     transform_eval=None,
@@ -894,6 +896,12 @@ def fetch_dataset(
         Name of dataset.
     root : str, optional
         Path to root directory containing the dataset.
+    partition : str, optional
+        Which partition of the dataset to return. One of ``"train"``,
+        ``"val"``, or ``"test"``. If this is not given, the function will
+        return a tuple of datasets.
+    modality : str, default="image"
+        Which data modality to use.
     prototyping : bool, default=False
         Whether to return a validation split distinct from the test split.
         If ``False``, the validation split will be the same as the test split
@@ -921,16 +929,25 @@ def fetch_dataset(
 
     Returns
     -------
-    dataset_train : torch.utils.data.Dataset
-        The training dataset.
-    dataset_val : torch.utils.data.Dataset
-        The validation dataset.
-    dataset_test : torch.utils.data.Dataset
-        The test dataset.
-    distinct_val_test : bool
-        Whether the validation and test partitions are distinct (True) or
-        identical (False).
+    dataset : torch.utils.data.Dataset or tuple
+        The dataset object or tuple of dataset objects.
     """
+    if partition is not None and dataset == "bioscan5m":
+        from zs_ssl_clustering.datasets.bioscan5m import BIOSCAN5M
+
+        root = root if root else "~/Datasets/BIOSCAN-5M"
+        root = os.path.expanduser(root)
+        dataset = BIOSCAN5M(
+            root,
+            split=partition,
+            modality=modality,
+            transform=transform_train,
+        )
+        return dataset
+
+    if modality != "image":
+        raise ValueError(f"Unsupported modality: {modality}")
+
     dataset_train, dataset_val, dataset_test = fetch_image_dataset(
         dataset=dataset,
         root=root,
@@ -980,12 +997,16 @@ def fetch_dataset(
         )
         distinct_val_test = True
 
-    return (
-        dataset_train,
-        dataset_val,
-        dataset_test,
-        distinct_val_test,
-    )
+    if partition is None:
+        return dataset_train, dataset_val, dataset_test, distinct_val_test
+    elif partition == "train":
+        return dataset_train
+    elif partition == "val":
+        return dataset_val
+    elif partition == "test":
+        return dataset_test
+    else:
+        raise ValueError(f"Unrecognised partition: {partition}")
 
 
 def create_train_val_split(

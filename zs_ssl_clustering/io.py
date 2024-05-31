@@ -45,13 +45,15 @@ def get_embeddings_path(config):
     """
     Generate path to embeddings file.
     """
-    fname = config.dataset_name + "__" + config.model + ".npz"
+    extras = ""
+    if config.modality != "image":
+        extras += f"__{config.modality}"
+    fname = config.dataset_name + "__" + config.model + extras + ".npz"
     fname = sanitize_filename(fname)
-    fname = os.path.join(
-        config.embedding_dir,
-        sanitize_filename(config.partition + f"__z{config.zoom_ratio}"),
-        fname,
-    )
+    subdir = config.partition
+    if config.modality == "image":
+        subdir += f"__z{config.zoom_ratio}"
+    fname = os.path.join(config.embedding_dir, sanitize_filename(subdir), fname)
     return fname
 
 
