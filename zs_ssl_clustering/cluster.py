@@ -66,7 +66,7 @@ def run(config):
         config.normalize = True
 
     if config.save_pred is None:
-        config.save_pred = config.partition == "test"
+        config.save_pred = any("test" in p for p in config.partition)
 
     memory_slurm = os.environ.get("SLURM_MEM_PER_NODE", None)
     if memory_slurm:
@@ -122,37 +122,8 @@ def run(config):
         config.run_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     start_loading = time.time()
-    # Load the embeddings of each modality
-    embeddings = []
-    y_true = []
-    for modality in config.modality:
-        if config.model in {"none", "raw"}:
-            print("Using raw image pixel data instead of model embedding.", flush=True)
-            from torch import nn
-
-            import zs_ssl_clustering.embed
-
-            _config = copy.deepcopy(config)
-            _config.modality = modality
-            dataloader = zs_ssl_clustering.embed.make_dataloader(_config)
-            embeddings_i, y_i = zs_ssl_clustering.embed.embed_dataset(
-                dataloader, nn.Flatten(), "cpu"
-            )
-            embeddings.append(embeddings_i)
-            y_true.append(y_i)
-        else:
-            fname = io.get_embeddings_path(config, modality=modality)
-            print(f"Loading encoder embeddings from {fname}", flush=True)
-            # Only need allow_pickle=True if we're using the saved config dict
-            data = np.load(fname)
-            embeddings.append(data["embeddings"])
-            y_true.append(data["y_true"])
-
-    # Concatenate the embeddings from each modality in the feature dimension
-    embeddings = np.concatenate(embeddings, axis=1)
-    for i in range(1, len(y_true)):
-        assert np.all(y_true[i] == y_true[0]), "Mismatch in y_true labels"
-    y_true = y_true[0]
+    # Load the embeddings of each modality and partition
+    embeddings, y_true = io.load_embeddings(config)
 
     print(f"Finished loading data in {time.time() - start_loading}", flush=True)
 
@@ -894,8 +865,9 @@ def get_parser():
     group.add_argument(
         "--partition",
         type=str,
-        default="test",
-        help="Which partition of the dataset to use. Default: %(default)s",
+        default=("test",),
+        nargs="+",
+        help="Which partitions of the dataset to use. Default: %(default)s",
     )
     group.add_argument(
         "--zoom-ratio",
