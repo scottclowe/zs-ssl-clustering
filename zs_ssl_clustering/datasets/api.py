@@ -132,6 +132,11 @@ def image_dataset_sizes(dataset):
         img_size = 256
         num_channels = 3
 
+    elif dataset == "bioscan5m":
+        num_classes = 11847
+        img_size = None
+        num_channels = 3
+
     elif dataset == "nabirds":
         num_classes = 555
         img_size = None
@@ -542,6 +547,33 @@ def fetch_image_dataset(
         dataset_test = BIOSCAN(
             root,
             split="test",
+            transform=transform_eval,
+        )
+
+    elif dataset == "bioscan5m":
+        from zs_ssl_clustering.datasets.bioscan5m import BIOSCAN5M
+
+        if root:
+            pass
+        else:
+            root = "~/Datasets/BIOSCAN-5M"
+        root = os.path.expanduser(root)
+        dataset_train = BIOSCAN5M(
+            root,
+            split="train",
+            modality="image",
+            transform=transform_train,
+        )
+        dataset_val = BIOSCAN5M(
+            root,
+            split="val",
+            modality="image",
+            transform=transform_eval,
+        )
+        dataset_test = BIOSCAN5M(
+            root,
+            split="test",
+            modality="image",
             transform=transform_eval,
         )
 
