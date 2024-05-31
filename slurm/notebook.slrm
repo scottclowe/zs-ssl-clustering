@@ -12,7 +12,7 @@
 
 # Manually define the project name.
 # This should also be the name of your conda environment used for this project.
-PROJECT_NAME="zs-ssl-clustering"
+PROJECT_NAME="zs-ssl-clustering_BIOSCAN-5M"
 
 # Exit if any command hits an error
 set -e
