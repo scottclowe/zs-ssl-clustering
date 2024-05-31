@@ -22,7 +22,7 @@
 # This must also be the name of your conda environment used for this project.
 PROJECT_NAME="zs-ssl-clustering_BIOSCAN-5M"
 # Automatically convert hyphens to underscores, to get the name of the project directory.
-PROJECT_DIRN="${PROJECT_NAME//-/_}"
+PROJECT_DIRN="zs_ssl_clustering"
 
 # Exit the script if any command hits an error
 set -e
