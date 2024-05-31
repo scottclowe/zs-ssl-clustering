@@ -122,23 +122,37 @@ def run(config):
         config.run_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     start_loading = time.time()
-    if config.model in {"none", "raw"}:
-        print("Using raw image pixel data instead of model embedding.", flush=True)
-        from torch import nn
+    # Load the embeddings of each modality
+    embeddings = []
+    y_true = []
+    for modality in config.modality:
+        if config.model in {"none", "raw"}:
+            print("Using raw image pixel data instead of model embedding.", flush=True)
+            from torch import nn
 
-        import zs_ssl_clustering.embed
+            import zs_ssl_clustering.embed
 
-        dataloader = zs_ssl_clustering.embed.make_dataloader(config)
-        embeddings, y_true = zs_ssl_clustering.embed.embed_dataset(
-            dataloader, nn.Flatten(), "cpu"
-        )
-    else:
-        fname = io.get_embeddings_path(config)
-        print(f"Loading encoder embeddings from {fname}", flush=True)
-        # Only need allow_pickle=True if we're using the saved config dict
-        data = np.load(fname)
-        embeddings = data["embeddings"]
-        y_true = data["y_true"]
+            _config = copy.deepcopy(config)
+            _config.modality = modality
+            dataloader = zs_ssl_clustering.embed.make_dataloader(_config)
+            embeddings_i, y_i = zs_ssl_clustering.embed.embed_dataset(
+                dataloader, nn.Flatten(), "cpu"
+            )
+            embeddings.append(embeddings_i)
+            y_true.append(y_i)
+        else:
+            fname = io.get_embeddings_path(config, modality=modality)
+            print(f"Loading encoder embeddings from {fname}", flush=True)
+            # Only need allow_pickle=True if we're using the saved config dict
+            data = np.load(fname)
+            embeddings.append(data["embeddings"])
+            y_true.append(data["y_true"])
+
+    # Concatenate the embeddings from each modality in the feature dimension
+    embeddings = np.concatenate(embeddings, axis=1)
+    for i in range(1, len(y_true)):
+        assert np.all(y_true[i] == y_true[0]), "Mismatch in y_true labels"
+    y_true = y_true[0]
 
     print(f"Finished loading data in {time.time() - start_loading}", flush=True)
 
@@ -871,6 +885,13 @@ def get_parser():
         help="Name of the dataset to learn. Default: %(default)s",
     )
     group.add_argument(
+        "--modality",
+        type=str,
+        default=("image",),
+        nargs="+",
+        help="Which data modalities from the dataset to use. Default: %(default)s",
+    )
+    group.add_argument(
         "--partition",
         type=str,
         default="test",
@@ -895,7 +916,15 @@ def get_parser():
         dest="model",
         type=str,
         default="resnet18",
-        help="Name of model architecture. Default: %(default)s",
+        help="Name of image encoder. Default: %(default)s",
+    )
+    group.add_argument(
+        "--dna-model",
+        "--dna-encoder",
+        dest="model_dna",
+        type=str,
+        default="barcodebert_4-12-12",
+        help="Name of DNA encoder. Default: %(default)s",
     )
     # Input/output directory args ---------------------------------------------
     group = parser.add_argument_group("Input/output options")

@@ -41,17 +41,20 @@ def sanitize_filename(text, allow_dotfiles=False):
     return text
 
 
-def get_embeddings_path(config):
+def get_embeddings_path(config, modality=None):
     """
     Generate path to embeddings file.
     """
+    if modality is None:
+        modality = getattr(config, "modality", "image")
     extras = ""
-    if config.modality != "image":
-        extras += f"__{config.modality}"
-    fname = config.dataset_name + "__" + config.model + extras + ".npz"
+    if modality != "image":
+        extras += f"__{modality}"
+    model = config.model if modality == "image" else config.dna_model
+    fname = config.dataset_name + "__" + model + extras + ".npz"
     fname = sanitize_filename(fname)
     subdir = config.partition
-    if config.modality == "image":
+    if modality == "image":
         subdir += f"__z{config.zoom_ratio}"
     fname = os.path.join(config.embedding_dir, sanitize_filename(subdir), fname)
     return fname
@@ -61,13 +64,16 @@ def get_pred_path(config):
     """
     Generate path to y_pred file.
     """
-    fname = (
-        f"{config.partition}-{config.dataset_name}__{config.model}__{config.run_id}.npz"
-    )
+    fname = f"{config.partition}-{config.dataset_name}"
+    if "image" in config.modality:
+        fname += f"__{config.model}"
+    if "dna" in config.modality:
+        fname += f"__{config.dna_model}"
+    fname += f"__{config.run_id}.npz"
     fname = sanitize_filename(fname)
     fname = os.path.join(
         getattr(config, "predictions_dir", "y_pred"),
-        sanitize_filename(config.partition + f"__z{config.zoom_ratio}"),
+        sanitize_filename(config.partition),
         fname,
     )
     return fname
