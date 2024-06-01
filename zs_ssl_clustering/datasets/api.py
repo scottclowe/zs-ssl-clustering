@@ -559,14 +559,20 @@ def fetch_image_dataset(
             root = "~/Datasets/BIOSCAN-5M"
         root = os.path.expanduser(root)
         extra_args = {}
-        if dataset == "bioscan5mperbarcodedupns":
+        if dataset.startswith("bioscan5mperbarcodedupns"):
             extra_args["reduce_repeated_barcodes"] = "base"
-        elif dataset == "bioscan5mperbarcodededupns":
+            remaining_dataset = dataset.replace("bioscan5mperbarcodedupns", "")
+        elif dataset.startswith("bioscan5mperbarcodededupns"):
             extra_args["reduce_repeated_barcodes"] = "rstrip_Ns"
-        elif dataset != "bioscan5m":
+            remaining_dataset = dataset.replace("bioscan5mperbarcodededupns", "")
+        elif dataset.startswith("bioscan5m"):
+            remaining_dataset = dataset.replace("bioscan5m", "")
+        else:
             raise ValueError(
                 "Unrecognised BIOSCAN-5M dataset variant: {}".format(dataset)
             )
+        if remaining_dataset:
+            extra_args["max_nucleotides"] = int(remaining_dataset)
         dataset_train = BIOSCAN5M(
             root,
             split="train",
@@ -952,14 +958,20 @@ def fetch_dataset(
         root = root if root else "~/Datasets/BIOSCAN-5M"
         root = os.path.expanduser(root)
         extra_args = {}
-        if dataset == "bioscan5mperbarcodedupns":
+        if dataset.startswith("bioscan5mperbarcodedupns"):
             extra_args["reduce_repeated_barcodes"] = "base"
-        elif dataset == "bioscan5mperbarcodededupns":
+            remaining_dataset = dataset.replace("bioscan5mperbarcodedupns", "")
+        elif dataset.startswith("bioscan5mperbarcodededupns"):
             extra_args["reduce_repeated_barcodes"] = "rstrip_Ns"
-        elif dataset != "bioscan5m":
+            remaining_dataset = dataset.replace("bioscan5mperbarcodededupns", "")
+        elif dataset.startswith("bioscan5m"):
+            remaining_dataset = dataset.replace("bioscan5m", "")
+        else:
             raise ValueError(
                 "Unrecognised BIOSCAN-5M dataset variant: {}".format(dataset)
             )
+        if remaining_dataset:
+            extra_args["max_nucleotides"] = int(remaining_dataset)
         dataset = BIOSCAN5M(
             root,
             split=partition,

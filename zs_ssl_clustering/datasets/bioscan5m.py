@@ -67,6 +67,9 @@ class BIOSCAN5M(VisionDataset):
     reduce_repeated_barcodes : str or bool, default=False
         Whether to reduce the dataset to only one sample per barcodes.
 
+    max_nucleotides : int, default=None
+        Maximum number of nucleotides to keep in the DNA barcode.
+
     target_type : str, default="species"
         Type of target to use. One of:
         ``"phylum"``, ``"class"``, ``"order"``, ``"family"``, ``"subfamily"``,
@@ -88,6 +91,7 @@ class BIOSCAN5M(VisionDataset):
         split="train",
         modality=("image", "dna"),
         reduce_repeated_barcodes=False,
+        max_nucleotides=None,
         target_type="species",
         transform=None,
         dna_transform=None,
@@ -102,6 +106,7 @@ class BIOSCAN5M(VisionDataset):
 
         self.split = split
         self.reduce_repeated_barcodes = reduce_repeated_barcodes
+        self.max_nucleotides = max_nucleotides
         self.dna_transform = dna_transform
 
         if isinstance(modality, str):
@@ -200,6 +205,8 @@ class BIOSCAN5M(VisionDataset):
             dtype=df_dtypes,
             usecols=df_usecols,
         )
+        if self.max_nucleotides is not None:
+            df["dna_barcode"] = df["dna_barcode"].str[: self.max_nucleotides]
         if self.reduce_repeated_barcodes:
             # Shuffle the data order
             df = df.sample(frac=1, random_state=0)
