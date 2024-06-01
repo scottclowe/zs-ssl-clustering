@@ -69,7 +69,10 @@ def get_pred_path(config):
     """
     Generate path to y_pred file.
     """
-    fname = f"{config.partition}-{config.dataset_name}"
+    partition = config.partition
+    if not isinstance(partition, str):
+        partition = "-".join(config.partition)
+    fname = f"{partition}-{config.dataset_name}"
     if "image" in config.modality:
         fname += f"__{config.model}"
     if "dna" in config.modality:
@@ -78,7 +81,7 @@ def get_pred_path(config):
     fname = sanitize_filename(fname)
     fname = os.path.join(
         getattr(config, "predictions_dir", "y_pred"),
-        sanitize_filename(config.partition),
+        sanitize_filename(partition),
         fname,
     )
     return fname
