@@ -28,9 +28,9 @@ def get_transform(
 
 
 def get_dna_transform(max_len=660, strip_trailing_n=True):
-    steps = [
-        transforms.Lambda(lambda x: x[:max_len]),
-        transforms.Lambda(lambda x: x.rstrip("N") if strip_trailing_n else x),
-    ]
+    steps = []
+    if max_len is not None:
+        steps.append(transforms.Lambda(lambda x: x[:max_len]))
+    steps.append(transforms.Lambda(lambda x: x.rstrip("N") if strip_trailing_n else x))
     transform = transforms.Compose(steps)
     return transform
