@@ -64,7 +64,7 @@ class BIOSCAN5M(VisionDataset):
     modality : str or Tuple[str], default=("image", "dna")
         Which data modalities to use.
 
-    reduce_repeated_barcodes : bool, default=False
+    reduce_repeated_barcodes : str or bool, default=False
         Whether to reduce the dataset to only one sample per barcodes.
 
     target_type : str, default="species"
@@ -204,7 +204,16 @@ class BIOSCAN5M(VisionDataset):
             # Shuffle the data order
             df = df.sample(frac=1, random_state=0)
             # Drop duplicated barcodes
-            df = df.drop_duplicates(subset=["dna_barcode"])
+            if self.reduce_repeated_barcodes == "rstrip_Ns":
+                df["dna_barcode_strip"] = df["dna_barcode"].str.rstrip("N")
+                df = df.drop_duplicates(subset=["dna_barcode_strip"])
+                df.drop(columns=["dna_barcode_strip"], inplace=True)
+            elif self.reduce_repeated_barcodes == "base":
+                df = df.drop_duplicates(subset=["dna_barcode"])
+            else:
+                raise ValueError(
+                    f"Unfamiliar reduce_repeated_barcodes value: {self.reduce_repeated_barcodes}"
+                )
             # Re-order the data (reverting the shuffle)
             df = df.sort_index()
         # Filter to just the split of interest

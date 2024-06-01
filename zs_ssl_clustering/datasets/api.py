@@ -559,8 +559,10 @@ def fetch_image_dataset(
             root = "~/Datasets/BIOSCAN-5M"
         root = os.path.expanduser(root)
         extra_args = {}
-        if dataset == "bioscan5mperbarcode":
-            extra_args["reduce_repeated_barcodes"] = True
+        if dataset == "bioscan5mperbarcodedupns":
+            extra_args["reduce_repeated_barcodes"] = "base"
+        elif dataset == "bioscan5mperbarcodededupns":
+            extra_args["reduce_repeated_barcodes"] = "rstrip_Ns"
         elif dataset != "bioscan5m":
             raise ValueError(
                 "Unrecognised BIOSCAN-5M dataset variant: {}".format(dataset)
@@ -950,8 +952,10 @@ def fetch_dataset(
         root = root if root else "~/Datasets/BIOSCAN-5M"
         root = os.path.expanduser(root)
         extra_args = {}
-        if dataset == "bioscan5mperbarcode":
-            extra_args["reduce_repeated_barcodes"] = True
+        if dataset == "bioscan5mperbarcodedupns":
+            extra_args["reduce_repeated_barcodes"] = "base"
+        elif dataset == "bioscan5mperbarcodededupns":
+            extra_args["reduce_repeated_barcodes"] = "rstrip_Ns"
         elif dataset != "bioscan5m":
             raise ValueError(
                 "Unrecognised BIOSCAN-5M dataset variant: {}".format(dataset)
