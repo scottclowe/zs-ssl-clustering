@@ -61,6 +61,8 @@ def get_embeddings_path(config, partition=None, modality=None):
         raise ValueError("Partition must be a string to load its embeddings.")
     if modality == "image":
         subdir += f"__z{config.zoom_ratio}"
+    if modality == "dna" and config.dna_maxlen is not None:
+        subdir += f"__maxlen{config.dna_maxlen}"
     fname = os.path.join(config.embedding_dir, sanitize_filename(subdir), fname)
     return fname
 

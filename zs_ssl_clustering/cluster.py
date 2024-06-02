@@ -880,6 +880,11 @@ def get_parser():
         type=int,
         help="Size of images to use as model input. Default: 224.",
     )
+    group.add_argument(
+        "--dna-maxlen",
+        type=int,
+        help="Maximum length of DNA sequence to use. Default: %(default)s",
+    )
     # Architecture args -------------------------------------------------------
     group = parser.add_argument_group("Architecture")
     group.add_argument(
