@@ -11,8 +11,7 @@ from torchvision.datasets.vision import VisionDataset
 df_dtypes = {
     "processid": "str",
     "sampleid": "str",
-    "image_file": str,
-    "chunk_number": "uint8",
+    "chunk_number": "Int64",
     "phylum": "category",
     "class": "category",
     "order": "category",
@@ -24,7 +23,7 @@ df_dtypes = {
     "dna_barcode": str,
     "split": "category",
     "country": "category",
-    "province/state": "category",
+    "province_state": "category",
     "coord-lat": float,
     "coord-lon": float,
     "surface_area": float,
@@ -33,7 +32,7 @@ df_dtypes = {
 }
 
 df_usecols = [
-    "image_file",
+    "processid",
     "chunk_number",
     "phylum",
     "class",
@@ -102,7 +101,7 @@ class BIOSCAN5M(VisionDataset):
 
         self.metadata = None
         self.root = root
-        self.image_dir = os.path.expanduser(os.path.join(self.root, "images"))
+        self.image_dir = self.root
 
         self.split = split
         self.reduce_repeated_barcodes = reduce_repeated_barcodes
@@ -134,11 +133,7 @@ class BIOSCAN5M(VisionDataset):
 
     def __getitem__(self, index: int):
         sample = self.metadata.iloc[index]
-        img_path = os.path.join(
-            self.image_dir,
-            f"cropped_resized_part{sample['chunk_number']}",
-            f"cropped_resized_{sample['image_file']}",
-        )
+        img_path = os.path.join(self.image_dir, sample["image_path"])
         values = []
         for modality in self.modality:
             if modality == "image":
@@ -180,13 +175,7 @@ class BIOSCAN5M(VisionDataset):
             # Only check the images exist if the images folder exists,
             # as the user might only be interested in the DNA data
             check &= os.path.exists(
-                os.path.join(self.image_dir, "cropped_resized_part1")
-            )
-            check &= os.path.exists(
-                os.path.join(self.image_dir, "cropped_resized_part2")
-            )
-            check &= os.path.exists(
-                os.path.join(self.image_dir, "cropped_resized_part99")
+                os.path.join(self.image_dir, "images_by_split/eval/cropped_resized")
             )
         return check
 
@@ -238,4 +227,23 @@ class BIOSCAN5M(VisionDataset):
         ]
         for c in label_cols:
             df[c + "_index"] = df[c].cat.codes
+        # Add path to image file
+        df["image_path"] = (
+            "images_by_split/eval/cropped_resized/"
+            + df["split"].astype(str)
+            + "/"
+            + df["processid"]
+            + ".jpg"
+        )
+        select = df["split"].isin(["pretrain", "train"])
+        df.loc[select, "image_path"] = (
+            "images_by_split/"
+            + df["split"].astype(str)
+            + "/cropped_resized/"
+            + "part"
+            + df.loc[select, "chunk_number"].astype(str)
+            + "/"
+            + df["processid"]
+            + ".jpg"
+        )
         return df
