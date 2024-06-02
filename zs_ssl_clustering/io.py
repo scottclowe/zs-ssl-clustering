@@ -53,7 +53,7 @@ def get_embeddings_path(config, partition=None, modality=None):
     extras = ""
     if modality != "image":
         extras += f"__{modality}"
-    model = config.model if modality == "image" else config.dna_model
+    model = config.model if modality == "image" else config.model_dna
     fname = config.dataset_name + "__" + model + extras + ".npz"
     fname = sanitize_filename(fname)
     subdir = partition if partition is not None else config.partition
@@ -78,7 +78,7 @@ def get_pred_path(config):
     if "image" in config.modality:
         fname += f"__{config.model}"
     if "dna" in config.modality:
-        fname += f"__{config.dna_model}"
+        fname += f"__{config.model_dna}"
     fname += f"__{config.run_id}.npz"
     fname = sanitize_filename(fname)
     fname = os.path.join(

@@ -898,6 +898,8 @@ def get_parser():
     group.add_argument(
         "--dna-model",
         "--dna-encoder",
+        "--model-dna",
+        "--encoder-dna",
         dest="model_dna",
         type=str,
         default="barcodebert_4-12-12",
