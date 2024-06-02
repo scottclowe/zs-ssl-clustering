@@ -50,11 +50,8 @@ def get_embeddings_path(config, partition=None, modality=None):
     """
     if modality is None:
         modality = getattr(config, "modality", "image")
-    extras = ""
-    if modality != "image":
-        extras += f"__{modality}"
     model = config.model if modality == "image" else config.model_dna
-    fname = config.dataset_name + "__" + model + extras + ".npz"
+    fname = config.dataset_name + "__" + model + ".npz"
     fname = sanitize_filename(fname)
     subdir = partition if partition is not None else config.partition
     if not isinstance(subdir, str):
