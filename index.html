@@ -24,7 +24,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
 
-  <title>Academic Project Page</title>
+  <title>Zero-shot Clustering</title>
   <link rel="icon" type="image/x-icon" href="static/images/favicon.ico">
   <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
   rel="stylesheet">
@@ -47,98 +47,105 @@
 <body>
 
 
-  <section class="hero">
-    <div class="hero-body">
-      <div class="container is-max-desktop">
-        <div class="columns is-centered">
-          <div class="column has-text-centered">
-            <h1 class="title is-1 publication-title">Academic Project Page</h1>
-            <div class="is-size-5 publication-authors">
-              <!-- Paper authors -->
-              <span class="author-block">
-                <a href="FIRST AUTHOR PERSONAL LINK" target="_blank">First Author</a><sup>*</sup>,</span>
-                <span class="author-block">
-                  <a href="SECOND AUTHOR PERSONAL LINK" target="_blank">Second Author</a><sup>*</sup>,</span>
-                  <span class="author-block">
-                    <a href="THIRD AUTHOR PERSONAL LINK" target="_blank">Third Author</a>
-                  </span>
-                  </div>
+<section class="hero">
+<div class="hero-body">
+<div class="container is-max-desktop">
+<div class="columns is-centered">
+<div class="column has-text-centered">
+<h1 class="title is-1 publication-title">An Empirical Study into Clustering of Unseen Datasets with Self-Supervised Encoders</h1>
 
-                  <div class="is-size-5 publication-authors">
-                    <span class="author-block">Institution Name<br>Conferance name and year</span>
-                    <span class="eql-cntrb"><small><br><sup>*</sup>Indicates Equal Contribution</small></span>
-                  </div>
+    <div class="is-size-5 publication-authors">
+        <!-- Paper authors -->
+        <span class="author-block">
+            <a href="https://scottclowe.com/" target="_blank">Scott C. Lowe</a><sup>1,*</sup>,
+        </span>
+        <span class="author-block">
+            <a href="https://joakimhaurum.github.io/" target="_blank">Joakim Bruslund Haurum</a><sup>2,3,*</sup>,
+        </span>
+        <br>
+        <span class="author-block">
+            <a href="https://web.cs.dal.ca/~oore/" target="_blank">Sageev Oore</a><sup>1,4,†</sup>,
+        </span>
+        <span class="author-block">
+            <a href="https://vbn.aau.dk/en/persons/103282" target="_blank">Thomas B. Moeslund</a><sup>2,3,†</sup>,
+        </span>
+        <span class="author-block">
+            <a href="https://www.gwtaylor.ca/" target="_blank">Graham W. Taylor</a><sup>1,5,†</sup>
+        </span>
+    </div>
 
-                  <div class="column has-text-centered">
-                    <div class="publication-links">
-                         <!-- Arxiv PDF link -->
-                      <span class="link-block">
-                        <a href="https://arxiv.org/pdf/<ARXIV PAPER ID>.pdf" target="_blank"
-                        class="external-link button is-normal is-rounded is-dark">
-                        <span class="icon">
-                          <i class="fas fa-file-pdf"></i>
-                        </span>
-                        <span>Paper</span>
-                      </a>
-                    </span>
+    <div class="is-size-5 publication-authors">
+        <span class="author-block">
+        <small>
+        <sup>1</sup>Vector Institute
+        <sup>2</sup>Aalborg University, Denmark
+        <sup>3</sup>Pioneer Centre for AI, Denmark
+        <br>
+        <sup>4</sup>Dalhousie University, Canada
+        <sup>5</sup>University of Guelph, Canada
+        </small>
+        <br>
+        <!-- Conferance name and year -->
+        </span>
+        <span class="eql-cntrb"><small><br><sup>*</sup>Equal Contribution <sup>†</sup>Equal Supervision</small></span>
+    </div>
 
-                    <!-- Supplementary PDF link -->
-                    <span class="link-block">
-                      <a href="static/pdfs/supplementary_material.pdf" target="_blank"
-                      class="external-link button is-normal is-rounded is-dark">
-                      <span class="icon">
-                        <i class="fas fa-file-pdf"></i>
-                      </span>
-                      <span>Supplementary</span>
-                    </a>
-                  </span>
+    <div class="column has-text-centered">
+        <div class="publication-links">
+        <!-- Arxiv PDF link
+        <span class="link-block">
+            <a href="https://arxiv.org/pdf/<ARXIV PAPER ID>.pdf" target="_blank"
+            class="external-link button is-normal is-rounded is-dark">
+            <span class="icon">
+            <i class="fas fa-file-pdf"></i>
+            </span>
+            <span>Paper</span>
+            </a>
+        </span>
+        -->
 
-                  <!-- Github link -->
-                  <span class="link-block">
-                    <a href="https://github.com/YOUR REPO HERE" target="_blank"
-                    class="external-link button is-normal is-rounded is-dark">
-                    <span class="icon">
-                      <i class="fab fa-github"></i>
-                    </span>
-                    <span>Code</span>
-                  </a>
-                </span>
+        <!-- Supplementary PDF link
+        <span class="link-block">
+            <a href="static/pdfs/supplementary_material.pdf" target="_blank"
+            class="external-link button is-normal is-rounded is-dark">
+            <span class="icon">
+            <i class="fas fa-file-pdf"></i>
+            </span>
+            <span>Supplementary</span>
+            </a>
+        </span>
+        -->
 
-                <!-- ArXiv abstract Link -->
-                <span class="link-block">
-                  <a href="https://arxiv.org/abs/<ARXIV PAPER ID>" target="_blank"
-                  class="external-link button is-normal is-rounded is-dark">
-                  <span class="icon">
-                    <i class="ai ai-arxiv"></i>
-                  </span>
-                  <span>arXiv</span>
-                </a>
-              </span>
-            </div>
-          </div>
+        <!-- Github link -->
+        <span class="link-block">
+            <a href="https://github.com/scottclowe/zs-ssl-clustering/" target="_blank"
+            class="external-link button is-normal is-rounded is-dark">
+            <span class="icon">
+            <i class="fab fa-github"></i>
+            </span>
+            <span>Code</span>
+            </a>
+        </span>
+
+        <!-- ArXiv  Link
+        <span class="link-block">
+            <a href="https://arxiv.org/abs/<ARXIV PAPER ID>" target="_blank"
+            class="external-link button is-normal is-rounded is-dark">
+            <span class="icon">
+            <i class="ai ai-arxiv"></i>
+            </span>
+            <span>arXiv</span>
+            </a>
+        </span>
+        -->
         </div>
-      </div>
     </div>
-  </div>
+</div>
+</div>
+</div>
+</div>
 </section>
 
-
-<!-- Teaser video-->
-<section class="hero teaser">
-  <div class="container is-max-desktop">
-    <div class="hero-body">
-      <video poster="" id="tree" autoplay controls muted loop height="100%">
-        <!-- Your video here -->
-        <source src="static/videos/banner_video.mp4"
-        type="video/mp4">
-      </video>
-      <h2 class="subtitle has-text-centered">
-        Aliquam vitae elit ullamcorper tellus egestas pellentesque. Ut lacus tellus, maximus vel lectus at, placerat pretium mi. Maecenas dignissim tincidunt vestibulum. Sed consequat hendrerit nisl ut maximus. 
-      </h2>
-    </div>
-  </div>
-</section>
-<!-- End teaser video -->
 
 <!-- Paper abstract -->
 <section class="section hero is-light">
@@ -148,7 +155,20 @@
         <h2 class="title is-3">Abstract</h2>
         <div class="content has-text-justified">
           <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin ullamcorper tellus sed ante aliquam tempus. Etiam porttitor urna feugiat nibh elementum, et tempor dolor mattis. Donec accumsan enim augue, a vulputate nisi sodales sit amet. Proin bibendum ex eget mauris cursus euismod nec et nibh. Maecenas ac gravida ante, nec cursus dui. Vivamus purus nibh, placerat ac purus eget, sagittis vestibulum metus. Sed vestibulum bibendum lectus gravida commodo. Pellentesque auctor leo vitae sagittis suscipit.
+Can pretrained models generalize to new datasets without any retraining? We deploy
+pretrained image models on datasets they were not trained for, and investigate whether
+their embeddings form meaningful clusters. Our suite of benchmarking experiments
+use encoders pretrained solely on ImageNet-1k with either supervised or self-supervised
+training techniques, deployed on image datasets that were not seen during training, and
+clustered with conventional clustering algorithms. This evaluation provides new insights
+into the embeddings of self-supervised models, which prioritize different features to
+supervised models. Supervised encoders typically offer more utility than SSL encoders
+within the training domain, and the reverse far outside of it, however fine-tuned encoders
+demonstrate the opposite trend. Clustering provides a self-supervised learning evaluation
+method orthogonal to existing methods such as kNN. Additionally, we find the silhouette
+score when measured in a UMAP-reduced space is highly correlated with clustering
+performance, and can therefore be used as a proxy for clustering performance on data
+with no ground truth labels.
           </p>
         </div>
       </div>
@@ -158,133 +178,24 @@
 <!-- End paper abstract -->
 
 
-<!-- Image carousel -->
-<section class="hero is-small">
-  <div class="hero-body">
-    <div class="container">
-      <div id="results-carousel" class="carousel results-carousel">
-       <div class="item">
-        <!-- Your image here -->
-        <img src="static/images/carousel1.jpg" alt="MY ALT TEXT"/>
-        <h2 class="subtitle has-text-centered">
-          First image description.
-        </h2>
-      </div>
-      <div class="item">
-        <!-- Your image here -->
-        <img src="static/images/carousel2.jpg" alt="MY ALT TEXT"/>
-        <h2 class="subtitle has-text-centered">
-          Second image description.
-        </h2>
-      </div>
-      <div class="item">
-        <!-- Your image here -->
-        <img src="static/images/carousel3.jpg" alt="MY ALT TEXT"/>
-        <h2 class="subtitle has-text-centered">
-         Third image description.
-       </h2>
-     </div>
-     <div class="item">
-      <!-- Your image here -->
-      <img src="static/images/carousel4.jpg" alt="MY ALT TEXT"/>
-      <h2 class="subtitle has-text-centered">
-        Fourth image description.
-      </h2>
-    </div>
-  </div>
-</div>
-</div>
-</section>
-<!-- End image carousel -->
-
-
-
-
-<!-- Youtube video -->
-<section class="hero is-small is-light">
-  <div class="hero-body">
-    <div class="container">
-      <!-- Paper video. -->
-      <h2 class="title is-3">Video Presentation</h2>
-      <div class="columns is-centered has-text-centered">
-        <div class="column is-four-fifths">
-          
-          <div class="publication-video">
-            <!-- Youtube embed code here -->
-            <iframe src="https://www.youtube.com/embed/JkaxUblCGz0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-<!-- End youtube video -->
-
-
-<!-- Video carousel -->
-<section class="hero is-small">
-  <div class="hero-body">
-    <div class="container">
-      <h2 class="title is-3">Another Carousel</h2>
-      <div id="results-carousel" class="carousel results-carousel">
-        <div class="item item-video1">
-          <video poster="" id="video1" autoplay controls muted loop height="100%">
-            <!-- Your video file here -->
-            <source src="static/videos/carousel1.mp4"
-            type="video/mp4">
-          </video>
-        </div>
-        <div class="item item-video2">
-          <video poster="" id="video2" autoplay controls muted loop height="100%">
-            <!-- Your video file here -->
-            <source src="static/videos/carousel2.mp4"
-            type="video/mp4">
-          </video>
-        </div>
-        <div class="item item-video3">
-          <video poster="" id="video3" autoplay controls muted loop height="100%">\
-            <!-- Your video file here -->
-            <source src="static/videos/carousel3.mp4"
-            type="video/mp4">
-          </video>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-<!-- End video carousel -->
-
-
-
-
-
-
-<!-- Paper poster -->
-<section class="hero is-small is-light">
-  <div class="hero-body">
-    <div class="container">
-      <h2 class="title">Poster</h2>
-
-      <iframe  src="static/pdfs/sample.pdf" width="100%" height="550">
-          </iframe>
-        
-      </div>
-    </div>
-  </section>
-<!--End paper poster -->
-
 
 <!--BibTex citation -->
-  <section class="section" id="BibTeX">
+<section class="section" id="BibTeX">
     <div class="container is-max-desktop content">
-      <h2 class="title">BibTeX</h2>
-      <pre><code>BibTex Code Here</code></pre>
+    <h2 class="title">BibTeX</h2>
+<pre><code>@inproceedings{zero-shot-clustering,
+    title={Zero-shot Clustering of Embeddings with Pretrained and Self-Supervised Learnt Encoders},
+    author={Scott C Lowe and Joakim Bruslund Haurum and Sageev Oore and Thomas B. Moeslund and Graham W. Taylor},
+    booktitle={R0-FoMo:Robustness of Few-shot and Zero-shot Learning in Large Foundation Models},
+    year={2023},
+    url={https://openreview.net/forum?id=2gytoWpJGf}
+}</code></pre>
     </div>
 </section>
 <!--End BibTex citation -->
 
 
-  <footer class="footer">
+<footer class="footer">
   <div class="container">
     <div class="columns is-centered">
       <div class="column is-8">
@@ -309,4 +220,4 @@
     <!-- End of Statcounter Code -->
 
   </body>
-  </html>
+</html>
