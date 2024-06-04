@@ -65,6 +65,12 @@ def run(config):
         # to unit length.
         config.normalize = True
 
+    if "image" not in config.modality:
+        config.model = "none"
+
+    if "dna" not in config.modality:
+        config.model_dna = "none"
+
     if config.save_pred is None:
         config.save_pred = any("test" in p for p in config.partition)
 
