@@ -140,4 +140,38 @@ def load_embeddings(config, partitions=None, modalities=None):
     print(f"Loading encoder embeddings from {fname}", flush=True)
     # Only need allow_pickle=True if we're using the saved config dict
     data = np.load(fname)
-    return data["embeddings"], data["y_true"]
+    embeddings = data["embeddings"]
+    y_true = data["y_true"]
+
+    if config.prenorm == "none":
+        pass
+
+    elif config.prenorm == "l2":
+        # L2 normalize embeddings
+        print("Using L2-normalized embeddings")
+        embeddings /= np.linalg.norm(embeddings, axis=1, keepdims=True)
+
+    elif config.prenorm == "l2_corrected":
+        # L2 normalize embeddings, scaled by sqrt(d) where d is the dimensionality
+        print("Using L2-normalized embeddings")
+        embeddings /= np.linalg.norm(embeddings, axis=1, keepdims=True)
+        embeddings *= np.sqrt(embeddings.shape[1])
+
+    elif config.prenorm == "elementwise_zscore":
+        # Standardize to zero mean, unit variance
+        print("Using elementwise z-scored embeddings")
+        embeddings -= np.mean(embeddings, axis=0)
+        embeddings /= np.std(embeddings, axis=0)
+
+    elif config.prenorm == "average_zscore":
+        # Fit clusterer on average z-scored embeddings
+        print("Using average-z-scored embeddings")
+        # Standardize to zero mean, AVERAGE of unit variance (a spherical scaling which
+        # scales all distances equally, without altering importance of any dimensions)
+        embeddings -= np.mean(embeddings, axis=0)
+        embeddings /= np.mean(np.std(embeddings, axis=0))
+
+    else:
+        raise ValueError(f"Unknown prenorm option: {config.prenorm}")
+
+    return embeddings, y_true

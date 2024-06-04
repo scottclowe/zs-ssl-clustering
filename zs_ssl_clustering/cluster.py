@@ -65,6 +65,12 @@ def run(config):
         # to unit length.
         config.normalize = True
 
+    if "image" not in config.modality:
+        config.model = "none"
+
+    if "dna" not in config.modality:
+        config.model_dna = "none"
+
     if config.save_pred is None:
         config.save_pred = any("test" in p for p in config.partition)
 
@@ -1013,6 +1019,12 @@ def get_parser():
 
     # Normalization Args
     group = parser.add_argument_group("Normalization")
+    group.add_argument(
+        "--prenorm",
+        type=str,
+        default="none",
+        help="Type of normalization to apply to the embeddings before concatenating across modalities.",
+    )
     mx_group = group.add_mutually_exclusive_group()
     mx_group.add_argument(
         "--zscore",
