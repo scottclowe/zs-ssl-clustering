@@ -1272,7 +1272,7 @@ def get_parser():
     group.add_argument(
         "--wandb-project",
         type=str,
-        default="zs-ssl-clustering_BIOSCAN-5M_fixpth",
+        default="zs-ssl-clustering_BIOSCAN-5M_fixpth_fixDNA",
         help="Name of project on wandb, where these runs will be saved. Default: %(default)s",
     )
     group.add_argument(
