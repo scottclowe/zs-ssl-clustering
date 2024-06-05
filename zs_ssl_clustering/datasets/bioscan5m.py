@@ -213,7 +213,8 @@ class BIOSCAN5M(VisionDataset):
             # Re-order the data (reverting the shuffle)
             df = df.sort_index()
         # Filter to just the split of interest
-        df = df[df["split"] == self.split]
+        if self.split is not None and self.split != "all":
+            df = df[df["split"] == self.split]
         # Add index columns to use for targets
         label_cols = [
             "phylum",
