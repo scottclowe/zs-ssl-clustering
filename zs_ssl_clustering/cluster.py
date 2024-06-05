@@ -345,6 +345,7 @@ def run(config):
     reduced_dim = embeddings.shape[-1]
 
     clusterer_args = {
+        "n_clusters",
         "distance_metric",
         "max_iter",
         "min_samples",
@@ -367,15 +368,21 @@ def run(config):
         clusterer_args_used.add("distance_metric")
 
     if config.clusterer_name == "KMeans":
+        if config.n_clusters is not None:
+            n_clusters = config.n_clusters
+        else:
+            n_clusters = n_clusters_gt
         clusterer = sklearn.cluster.KMeans(
-            n_clusters=n_clusters_gt,
+            n_clusters=n_clusters,
             random_state=config.seed,
             max_iter=config.max_iter,
             init="k-means++",
             n_init=1,
             verbose=config.verbose,
         )
-        clusterer_args_used = clusterer_args_used.union({"seed", "max_iter"})
+        clusterer_args_used = clusterer_args_used.union(
+            {"seed", "max_iter", "n_clusters"}
+        )
 
     elif config.clusterer_name == "AffinityPropagation":
         clusterer = sklearn.cluster.AffinityPropagation(
@@ -400,8 +407,12 @@ def run(config):
         # Can be estimated through e.g.
         # https://proceedings.neurips.cc/paper_files/paper/2004/file/40173ea48d9567f1f393b20c855bb40b-Paper.pdf
         # Might be more recent work to consider
+        if config.n_clusters is not None:
+            n_clusters = config.n_clusters
+        else:
+            n_clusters = n_clusters_gt
         clusterer = sklearn.cluster.SpectralClustering(
-            n_clusters=n_clusters_gt,
+            n_clusters=n_clusters,
             n_components=config.spectral_n_components,
             affinity=config.spectral_affinity,
             assign_labels=config.spectral_assigner,
@@ -411,7 +422,13 @@ def run(config):
             n_jobs=config.workers,
         )
         clusterer_args_used = clusterer_args_used.union(
-            {"seed", "spectral_affinity", "spectral_assigner", "spectral_n_components"}
+            {
+                "seed",
+                "n_clusters",
+                "spectral_affinity",
+                "spectral_assigner",
+                "spectral_n_components",
+            }
         )
         if config.spectral_affinity == "nearest_neighbors":
             clusterer_args_used.add("spectral_n_neighbors")
@@ -419,7 +436,9 @@ def run(config):
     elif config.clusterer_name == "AgglomerativeClustering":
         # Can work with specified number of clusters, as well as unknown (which requires a distance threshold)
         # We can also impose some structure metric through the "connectivity" argument
-        if config.aggclust_dist_thresh is None:
+        if config.n_clusters is not None:
+            n_clusters = config.n_clusters
+        elif config.aggclust_dist_thresh is None:
             n_clusters = n_clusters_gt
         else:
             n_clusters = None
@@ -431,6 +450,7 @@ def run(config):
         )
         clusterer_args_used = clusterer_args_used.union(
             {
+                "n_clusters",
                 "distance_metric",
                 "aggclust_linkage",
                 "aggclust_dist_thresh",
@@ -1114,6 +1134,11 @@ def get_parser():
         default="HDBSCAN",
         choices=CLUSTERERS,
         help="Name of clustering method. Default: %(default)s",
+    )
+    group.add_argument(
+        "--n-clusters",
+        type=int,
+        help="Number of clusters to produce. Default: Number of ground-truth clusters.",
     )
     group.add_argument(
         "--distance-metric",
