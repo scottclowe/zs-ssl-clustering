@@ -953,11 +953,12 @@ def fetch_dataset(
     dataset = dataset.lower().replace("-", "").replace("_", "").replace(" ", "")
 
     if partition is not None and dataset.startswith("bioscan5m"):
-        from zs_ssl_clustering.datasets.bioscan5m import BIOSCAN5M
+        import zs_ssl_clustering.datasets.bioscan5m
 
         root = root if root else "~/Datasets/BIOSCAN-5M"
         root = os.path.expanduser(root)
         extra_args = {}
+        target_type = []
         if dataset.startswith("bioscan5mperbarcodedupns"):
             extra_args["reduce_repeated_barcodes"] = "base"
             remaining_dataset = dataset.replace("bioscan5mperbarcodedupns", "")
@@ -971,11 +972,19 @@ def fetch_dataset(
                 "Unrecognised BIOSCAN-5M dataset variant: {}".format(dataset)
             )
         if remaining_dataset:
-            extra_args["max_nucleotides"] = int(remaining_dataset)
-        dataset = BIOSCAN5M(
+            parts = "_".split(remaining_dataset)
+            for part in parts:
+                if part in zs_ssl_clustering.datasets.bioscan5m.df_usecols:
+                    target_type.append(part)
+                    continue
+                extra_args["max_nucleotides"] = int(part)
+        if len(target_type) == 0:
+            target_type = "species"
+        dataset = zs_ssl_clustering.datasets.bioscan5m.BIOSCAN5M(
             root,
             split=partition,
             modality=modality,
+            target_type=target_type,
             transform=transform_train,
             **extra_args,
         )
