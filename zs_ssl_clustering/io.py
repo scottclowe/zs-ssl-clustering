@@ -125,7 +125,7 @@ def load_embeddings(config, partitions=None, modalities=None):
 
     modality = modalities
 
-    if config.model in {"none", "raw"}:
+    if config.model == "raw":
         print("Using raw image pixel data instead of model embedding.", flush=True)
         from torch import nn
 
