@@ -80,6 +80,14 @@ body {
 
 .author-block {
   display: inline-block;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.institute-block {
+  display: inline-block;
+  padding-left: 4px;
+  padding-right: 4px;
 }
 
 .publication-banner img {
