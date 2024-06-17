@@ -194,6 +194,7 @@ class BIOSCAN5M(VisionDataset):
             dtype=df_dtypes,
             usecols=df_usecols,
         )
+        df.sort_values("processid", inplace=True)
         if self.max_nucleotides is not None:
             df["dna_barcode"] = df["dna_barcode"].str[: self.max_nucleotides]
         if self.reduce_repeated_barcodes:
