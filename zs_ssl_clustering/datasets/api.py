@@ -859,7 +859,7 @@ def fetch_image_dataset(
         )
         dataset_val = None
 
-    elif dataset == "breakhis":
+    elif dataset.startswith("breakhis"):
         from zs_ssl_clustering.datasets.breakhis import BreakHis
 
         if root:
@@ -867,14 +867,19 @@ def fetch_image_dataset(
         else:
             root = "~/Datasets/BreaKHis_v1"
         root = os.path.expanduser(root)
+
+        if len(dataset) > 8:
+            target_type = dataset[8:]
+        else:
+            target_type = "tumortype-magnification"
         dataset_train = BreakHis(
             root,
-            target_type="tumortype-magnification",
+            target_type=target_type,
             transform=transform_train,
         )
         dataset_test = BreakHis(
             root,
-            target_type="tumortype-magnification",
+            target_type=target_type,
             transform=transform_eval,
         )
         # Need to split the dataset to create a test set ourselves as it doesn't
