@@ -593,7 +593,8 @@ def run(config):
         # Map model to be loaded to specified single gpu.
         total_step = checkpoint["total_step"]
         n_samples_seen = checkpoint["n_samples_seen"]
-        encoder.load_state_dict(checkpoint["encoder"])
+        if "encoder" in checkpoint:
+            encoder.load_state_dict(checkpoint["encoder"])
         classifier.load_state_dict(checkpoint["classifier"])
         optimizer.load_state_dict(checkpoint["optimizer"])
         scheduler.load_state_dict(checkpoint["scheduler"])
@@ -736,13 +737,15 @@ def run(config):
         if config.model_output_dir and (
             not config.distributed or config.global_rank == 0
         ):
+            save_dict = {
+                "classifier": classifier,
+                "optimizer": optimizer,
+                "scheduler": scheduler,
+            }
+            if not config.freeze_encoder:
+                save_dict["encoder"] = encoder
             safe_save_model(
-                {
-                    "encoder": encoder,
-                    "classifier": classifier,
-                    "optimizer": optimizer,
-                    "scheduler": scheduler,
-                },
+                save_dict,
                 config.checkpoint_path,
                 config=config,
                 epoch=epoch,
