@@ -25,3 +25,18 @@ def get_transform(
     steps.append(transforms.Normalize(mean=torch.tensor(mean), std=torch.tensor(std)))
     transform = transforms.Compose(steps)
     return transform
+
+
+def get_randsizecrop_transform(image_size=224, image_channels=3, norm_type="imagenet"):
+    mean, std = NORMALIZATION[norm_type]
+
+    steps = [
+        transforms.RandomResizedCrop(image_size, scale=(0.7, 1.0)),
+        transforms.ToTensor(),
+    ]
+    if image_channels == 1:
+        # Convert greyscale image to have 3 channels
+        steps.append(transforms.Lambda(lambda x: x.repeat(3, 1, 1)))
+    steps.append(transforms.Normalize(mean=torch.tensor(mean), std=torch.tensor(std)))
+    transform = transforms.Compose(steps)
+    return transform

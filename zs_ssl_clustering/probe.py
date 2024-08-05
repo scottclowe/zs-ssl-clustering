@@ -337,7 +337,7 @@ def run(config):
 
     # Classifier -------------------------------------------------------------
     # Build our classifier head
-    n_class, _, _ = datasets.image_dataset_sizes(config.dataset_name)
+    n_class, _, img_channels = datasets.image_dataset_sizes(config.dataset_name)
     n_feature_out = probe_embedding_shape(encoder)
     classifier = nn.Linear(n_feature_out, n_class)
 
@@ -381,12 +381,16 @@ def run(config):
         config.image_size = 224
 
     # Transforms --------------------------------------------------------------
-    transform_args = {}
-    if config.dataset_name in data_transformations.VALID_TRANSFORMS:
-        transform_args["normalization"] = config.dataset_name
-
-    transform_train, transform_eval = data_transformations.get_transform(
-        config.transform_type, config.image_size, transform_args
+    transform_train = data_transformations.get_randsizecrop_transform(
+        image_size=config.image_size,
+        image_channels=img_channels,
+        norm_type="clip" if config.model.startswith("clip") else "imagenet",
+    )
+    transform_eval = data_transformations.get_transform(
+        getattr(config, "zoom_ratio", 1.0),
+        image_size=config.image_size,
+        image_channels=img_channels,
+        norm_type="clip" if config.model.startswith("clip") else "imagenet",
     )
 
     # Dataset -----------------------------------------------------------------
@@ -751,7 +755,6 @@ def run(config):
                 epoch=epoch,
                 total_step=total_step,
                 n_samples_seen=n_samples_seen,
-                transform_args=transform_args,
                 **best_stats,
             )
             if config.save_best_model and best_stats["best_epoch"] == epoch:
@@ -1188,10 +1191,10 @@ def get_parser():
         help="Attempt to download the dataset if it is not found locally.",
     )
     group.add_argument(
-        "--transform-type",
-        type=str,
-        default="cifar",
-        help="Name of augmentation stack to apply to training data. Default: %(default)s",
+        "--zoom-ratio",
+        type=float,
+        default=1.0,
+        help="Ratio of how much of the image to zoom in on. Default: %(default)s",
     )
     group.add_argument(
         "--image-size",
