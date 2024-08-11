@@ -496,8 +496,11 @@ def run(config):
     )
 
     # Fetch the constructor of the appropriate optimizer from torch.optim
+    optim_kwargs = {}
+    if config.optimizer == "SGD":
+        optim_kwargs["momentum"] = 0.9
     optimizer = getattr(torch.optim, config.optimizer)(
-        params, lr=config.lr, weight_decay=config.weight_decay
+        params, lr=config.lr, weight_decay=config.weight_decay, **optim_kwargs
     )
 
     # Scheduler ---------------------------------------------------------------
