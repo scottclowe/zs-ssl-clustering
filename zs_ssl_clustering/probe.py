@@ -502,12 +502,16 @@ def run(config):
 
     # Scheduler ---------------------------------------------------------------
     # Set up the learning rate scheduler
+    total_steps = len(dataloader_train) * config.epochs
     if config.scheduler.lower() == "onecycle":
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer,
             [p["lr"] for p in optimizer.param_groups],
-            epochs=config.epochs,
-            steps_per_epoch=len(dataloader_train),
+            total_steps=total_steps,
+        )
+    elif config.scheduler.lower() == "cosine":
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=total_steps, eta_min=0
         )
     else:
         raise NotImplementedError(f"Scheduler {config.scheduler} not supported.")
