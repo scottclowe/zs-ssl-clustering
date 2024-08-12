@@ -575,16 +575,16 @@ def run(config):
     # Scheduler ---------------------------------------------------------------
     # Set up the learning rate scheduler
     # TODO: Select by target num samples seen instead of epochs
-    total_steps = len(dataloader_train) * config.epochs
+    max_step = len(dataloader_train) * config.epochs
     if config.scheduler.lower() == "onecycle":
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer,
             [p["lr"] for p in optimizer.param_groups],
-            total_steps=total_steps,
+            total_steps=max_step,
         )
     elif config.scheduler.lower() == "cosine":
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, T_max=total_steps, eta_min=0
+            optimizer, T_max=max_step, eta_min=0
         )
     else:
         raise NotImplementedError(f"Scheduler {config.scheduler} not supported.")
@@ -664,7 +664,7 @@ def run(config):
 
     # Initialize step related variables as if we're starting from scratch.
     # Their values will be overridden by the checkpoint if we're resuming.
-    total_step = 0
+    curr_step = 0
     n_samples_seen = 0
 
     best_stats = {"max_accuracy": 0, "best_epoch": 0}
@@ -672,7 +672,7 @@ def run(config):
     if checkpoint is not None:
         print(f"Loading state from checkpoint (epoch {checkpoint['epoch']})")
         # Map model to be loaded to specified single gpu.
-        total_step = checkpoint["total_step"]
+        curr_step = checkpoint["curr_step"]
         n_samples_seen = checkpoint["n_samples_seen"]
         if "encoder" in checkpoint:
             encoder.load_state_dict(checkpoint["encoder"])
@@ -740,7 +740,7 @@ def run(config):
         # calculate the number of samples seen in this epoch.
         n_samples_seen_before = n_samples_seen
         # Run one epoch of training
-        train_stats, total_step, n_samples_seen = train_one_epoch(
+        train_stats, curr_step, n_samples_seen = train_one_epoch(
             config=config,
             encoder=encoder,
             classifiers=classifiers,
@@ -751,7 +751,7 @@ def run(config):
             device=device,
             epoch=epoch,
             n_epoch=config.epochs,
-            total_step=total_step,
+            curr_step=curr_step,
             n_samples_seen=n_samples_seen,
         )
         t_end_train = time.time()
@@ -828,7 +828,7 @@ def run(config):
                 config.checkpoint_path,
                 config=config,
                 epoch=epoch,
-                total_step=total_step,
+                curr_step=curr_step,
                 n_samples_seen=n_samples_seen,
                 **best_stats,
             )
@@ -859,7 +859,7 @@ def run(config):
                     **{f"{pre}/{eval_set}/{k}": v for k, v in eval_stats.items()},
                     **{f"{pre}/duration/{k}": v for k, v in timing_stats.items()},
                 },
-                step=total_step,
+                step=curr_step,
             )
             # Record the wandb time as contributing to the next epoch
             timing_stats = {"wandb": time.time() - t_end_epoch}
@@ -901,7 +901,7 @@ def run(config):
             k2 = k.replace(selected_classifier_name, "selected_classifier", 1)
             eval_stats[k2] = eval_stats[k]
         wandb.log(
-            {**{f"Eval/Test/{k}": v for k, v in eval_stats.items()}}, step=total_step
+            {**{f"Eval/Test/{k}": v for k, v in eval_stats.items()}}, step=curr_step
         )
 
     if distinct_val_test:
@@ -924,7 +924,7 @@ def run(config):
                 eval_stats[k2] = eval_stats[k]
             wandb.log(
                 {**{f"Eval/{eval_set}/{k}": v for k, v in eval_stats.items()}},
-                step=total_step,
+                step=curr_step,
             )
 
     # Create a copy of the train partition with evaluation transforms
@@ -965,7 +965,7 @@ def run(config):
             k2 = k.replace(selected_classifier_name, "selected_classifier", 1)
             eval_stats[k2] = eval_stats[k]
         wandb.log(
-            {**{f"Eval/Train/{k}": v for k, v in eval_stats.items()}}, step=total_step
+            {**{f"Eval/Train/{k}": v for k, v in eval_stats.items()}}, step=curr_step
         )
 
 
@@ -980,7 +980,7 @@ def train_one_epoch(
     device="cuda",
     epoch=1,
     n_epoch=None,
-    total_step=0,
+    curr_step=0,
     n_samples_seen=0,
 ):
     r"""
@@ -1008,7 +1008,7 @@ def train_one_epoch(
         The current epoch number (indexed from 1).
     n_epoch : int, optional
         The total number of epochs scheduled to train for.
-    total_step : int, default=0
+    curr_step : int, default=0
         The total number of steps taken so far.
     n_samples_seen : int, default=0
         The total number of samples seen so far.
@@ -1017,7 +1017,7 @@ def train_one_epoch(
     -------
     results: dict
         A dictionary containing the training performance for this epoch.
-    total_step : int
+    curr_step : int
         The total number of steps taken after this epoch.
     n_samples_seen : int
         The total number of samples seen after this epoch.
@@ -1079,7 +1079,7 @@ def train_one_epoch(
         scheduler.step()
 
         # Increment training progress counters
-        total_step += 1
+        curr_step += 1
         batch_size_all = batch_size_this_gpu * config.world_size
         n_samples_seen += batch_size_all
 
@@ -1145,7 +1145,7 @@ def train_one_epoch(
             if config.global_rank == 0:
                 wandb.log(
                     {"Training/stepwise/Train/stimuli": wandb.Image(log_images)},
-                    step=total_step,
+                    step=curr_step,
                 )
 
         # Log to console
@@ -1211,7 +1211,7 @@ def train_one_epoch(
             t_start_wandb = time.time()
             log_dict[f"{pre}/logging"] = t_start_wandb - t_start_logging
             # Send to wandb
-            wandb.log(log_dict, step=total_step)
+            wandb.log(log_dict, step=curr_step)
             t_end_wandb = time.time()
 
         # Record the time when we finished this batch
@@ -1221,7 +1221,7 @@ def train_one_epoch(
         "loss": loss_epoch / len(dataloader),
         "accuracy": max(acc_epoch.values()) / len(dataloader),
     }
-    return results, total_step, n_samples_seen
+    return results, curr_step, n_samples_seen
 
 
 def get_parser():
