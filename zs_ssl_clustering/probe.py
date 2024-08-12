@@ -1387,23 +1387,6 @@ def get_parser():
     )
     mx_group = group.add_mutually_exclusive_group()
     mx_group.add_argument(
-        "--torchvision",
-        dest="arch_framework",
-        action="store_const",
-        const="torchvision",
-        default="timm",
-        help="Use model architecture from torchvision (default is timm).",
-    )
-    mx_group.add_argument(
-        "--timm",
-        dest="arch_framework",
-        action="store_const",
-        const="timm",
-        default="timm",
-        help="Use model architecture from timm (default).",
-    )
-    mx_group = group.add_mutually_exclusive_group()
-    mx_group.add_argument(
         "--freeze-encoder",
         default=True,
         action="store_true",
