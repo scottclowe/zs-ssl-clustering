@@ -381,7 +381,8 @@ def run(config):
         print(f"Loading resumption checkpoint '{config.checkpoint_path}'")
         # Map model parameters to be load to the specified gpu.
         checkpoint = torch.load(config.checkpoint_path, map_location=device)
-        keys = vars(get_parser().parse_args("")).keys()
+        required_args = ["--max-step", "1"]
+        keys = vars(get_parser().parse_args(required_args)).keys()
         keys = set(keys).difference(
             ["resume", "gpu", "global_rank", "local_rank", "cpu_workers"]
         )
