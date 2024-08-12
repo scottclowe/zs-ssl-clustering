@@ -479,6 +479,7 @@ def run(config):
         image_channels=img_channels,
         norm_type="clip" if config.model.startswith("clip") else "imagenet",
         hflip=config.hflip,
+        rotate=config.random_rotate,
     )
     transform_eval = data_transformations.get_transform(
         getattr(config, "zoom_ratio", 1.0),
@@ -1361,6 +1362,11 @@ def get_parser():
         nargs="?",
         const=0.5,
         help="Probability of flipping the image horizontally. Default: %(default)s",
+    )
+    group.add_argument(
+        "--random-rotate",
+        action="store_true",
+        help="Whether to randomly rotate images. Default: %(default)s",
     )
     # Architecture args -------------------------------------------------------
     group = parser.add_argument_group("Architecture")

@@ -27,8 +27,29 @@ def get_transform(
     return transform
 
 
+class RandomRotate90(torch.nn.Module):
+    """
+    Randomly rotate the input tensor by 0, 90, 180, or 270 degrees.
+
+    Assumes input tensor is of shape (..., H, W).
+    """
+
+    def __init__(self, p=0.75):
+        super().__init__()
+        self.p = p
+
+    def forward(self, x):
+        if torch.rand(1) < self.p:
+            return x
+        k = torch.randint(1, 4, (1,))
+        return torch.rot90(x, k, dims=[-2, -1])
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}()"
+
+
 def get_randsizecrop_transform(
-    image_size=224, image_channels=3, norm_type="imagenet", hflip=0
+    image_size=224, image_channels=3, norm_type="imagenet", hflip=0, rotate=False
 ):
     mean, std = NORMALIZATION[norm_type]
 
@@ -40,6 +61,8 @@ def get_randsizecrop_transform(
         if hflip == 1:
             hflip = 0.5
         steps.append(transforms.RandomHorizontalFlip(p=hflip))
+    if rotate:
+        steps.append(RandomRotate90())
     if image_channels == 1:
         # Convert greyscale image to have 3 channels
         steps.append(transforms.Lambda(lambda x: x.repeat(3, 1, 1)))
