@@ -480,6 +480,7 @@ def run(config):
         image_size=config.image_size,
         image_channels=img_channels,
         norm_type="clip" if config.model.startswith("clip") else "imagenet",
+        ratio=config.min_aspect_ratio,
         hflip=config.hflip,
         rotate=config.random_rotate,
     )
@@ -1369,6 +1370,12 @@ def get_parser():
         "--random-rotate",
         action="store_true",
         help="Whether to randomly rotate images. Default: %(default)s",
+    )
+    group.add_argument(
+        "--min-aspect-ratio",
+        type=float,
+        default=0.75,
+        help="Minimum aspect ratio for crops. Default: %(default)s",
     )
     # Architecture args -------------------------------------------------------
     group = parser.add_argument_group("Architecture")

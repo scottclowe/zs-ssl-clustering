@@ -49,12 +49,23 @@ class RandomRotate90(torch.nn.Module):
 
 
 def get_randsizecrop_transform(
-    image_size=224, image_channels=3, norm_type="imagenet", hflip=0, rotate=False
+    image_size=224,
+    image_channels=3,
+    norm_type="imagenet",
+    ratio=None,
+    hflip=0,
+    rotate=False,
 ):
     mean, std = NORMALIZATION[norm_type]
+    if ratio is None:
+        ratio = (0.75, 1.3333333333333333)
+    elif ratio == 0:
+        ratio = (1, 1)
+    elif isinstance(ratio, (int, float)):
+        ratio = (ratio, 1 / ratio)
 
     steps = [
-        transforms.RandomResizedCrop(image_size, scale=(0.7, 1.0)),
+        transforms.RandomResizedCrop(image_size, scale=(0.7, 1.0), ratio=ratio),
         transforms.ToTensor(),
     ]
     if hflip:
