@@ -259,6 +259,8 @@ def evaluate(
         if verbosity >= 1:
             print(f"\n{partition_name} {classifier_name} evaluation results:")
             for k, v in results.items():
+                if verbosity <= 2 and k not in ["accuracy", "cross-entropy"]:
+                    continue
                 if k == "count":
                     print(f"  {k + ' ':.<21s}{v:7d}")
                 elif "entropy" in k:
