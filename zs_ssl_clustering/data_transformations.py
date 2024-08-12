@@ -41,7 +41,7 @@ class RandomRotate90(torch.nn.Module):
     def forward(self, x):
         if torch.rand(1) < self.p:
             return x
-        k = torch.randint(1, 4, (1,))
+        k = torch.randint(1, 4, (1,)).item()
         return torch.rot90(x, k, dims=[-2, -1])
 
     def __repr__(self) -> str:
