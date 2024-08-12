@@ -905,32 +905,10 @@ def run(config):
     )
 
     # TEST ====================================================================
-    # TODO: Make this work even if we are pre-empted after the last epoch
-    selected_classifier_name = eval_stats["best_classifier/name"]
 
     print(f"\nEvaluating final model (epoch {config.epochs}) performance")
-    # Evaluate on test set
-    print("\nEvaluating final model on test set...")
-    eval_stats = evaluate(
-        dataloader=dataloader_test,
-        encoder=encoder,
-        classifiers=classifiers,
-        device=device,
-        partition_name="Test",
-        is_distributed=config.distributed,
-    )
-    # Send stats to wandb
-    if config.log_wandb and config.global_rank == 0:
-        extras = {
-            k.replace(selected_classifier_name, "selected_classifier", 1): v
-            for k, v in eval_stats.items()
-            if k.startswith(selected_classifier_name)
-        }
-        eval_stats.update(extras)
-        wandb.log(
-            {**{f"Eval/Test/{k}": v for k, v in eval_stats.items()}}, step=curr_step
-        )
 
+    selected_classifier_name = ""
     if distinct_val_test:
         # Evaluate on validation set
         print(f"\nEvaluating final model on {eval_set} set...")
@@ -942,6 +920,8 @@ def run(config):
             partition_name=eval_set,
             is_distributed=config.distributed,
         )
+        # Select the best classifier based on the val set
+        selected_classifier_name = eval_stats["best_classifier/name"]
         # Send stats to wandb
         if config.log_wandb and config.global_rank == 0:
             extras = {
@@ -954,6 +934,31 @@ def run(config):
                 {**{f"Eval/{eval_set}/{k}": v for k, v in eval_stats.items()}},
                 step=curr_step,
             )
+
+    # Evaluate on test set
+    print("\nEvaluating final model on test set...")
+    eval_stats = evaluate(
+        dataloader=dataloader_test,
+        encoder=encoder,
+        classifiers=classifiers,
+        device=device,
+        partition_name="Test",
+        is_distributed=config.distributed,
+    )
+    if selected_classifier_name == "":
+        # Select the best classifier based on the test set
+        selected_classifier_name = eval_stats["best_classifier/name"]
+    # Send stats to wandb
+    if config.log_wandb and config.global_rank == 0:
+        extras = {
+            k.replace(selected_classifier_name, "selected_classifier", 1): v
+            for k, v in eval_stats.items()
+            if k.startswith(selected_classifier_name)
+        }
+        eval_stats.update(extras)
+        wandb.log(
+            {**{f"Eval/Test/{k}": v for k, v in eval_stats.items()}}, step=curr_step
+        )
 
     # Create a copy of the train partition with evaluation transforms
     # and a dataloader using the evaluation configuration (don't drop last)
