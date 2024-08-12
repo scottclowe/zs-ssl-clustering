@@ -1436,6 +1436,9 @@ def get_parser():
             2e-2,
             5e-2,
             0.1,
+            0.2,
+            0.5,
+            1.0,
         ),
         help=(
             f"Maximum learning rate, set per {BASE_BATCH_SIZE} batch size."
