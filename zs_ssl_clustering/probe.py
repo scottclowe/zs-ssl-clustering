@@ -1431,9 +1431,6 @@ def get_parser():
         nargs="+",
         type=float,
         default=(
-            1e-5,
-            2e-5,
-            5e-5,
             1e-4,
             2e-4,
             5e-4,
@@ -1447,6 +1444,9 @@ def get_parser():
             0.2,
             0.5,
             1.0,
+            2.0,
+            5.0,
+            10.0,
         ),
         help=(
             f"Maximum learning rate, set per {BASE_BATCH_SIZE} batch size."
