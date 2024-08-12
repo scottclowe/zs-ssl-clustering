@@ -478,6 +478,7 @@ def run(config):
         image_size=config.image_size,
         image_channels=img_channels,
         norm_type="clip" if config.model.startswith("clip") else "imagenet",
+        hflip=config.hflip,
     )
     transform_eval = data_transformations.get_transform(
         getattr(config, "zoom_ratio", 1.0),
@@ -1352,6 +1353,14 @@ def get_parser():
         "--image-size",
         type=int,
         help="Size of images to use as model input. Default: encoder's default.",
+    )
+    group.add_argument(
+        "--hflip",
+        type=int,
+        default=0,
+        nargs="?",
+        const=0.5,
+        help="Probability of flipping the image horizontally. Default: %(default)s",
     )
     # Architecture args -------------------------------------------------------
     group = parser.add_argument_group("Architecture")

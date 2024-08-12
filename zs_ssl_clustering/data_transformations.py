@@ -27,13 +27,19 @@ def get_transform(
     return transform
 
 
-def get_randsizecrop_transform(image_size=224, image_channels=3, norm_type="imagenet"):
+def get_randsizecrop_transform(
+    image_size=224, image_channels=3, norm_type="imagenet", hflip=0
+):
     mean, std = NORMALIZATION[norm_type]
 
     steps = [
         transforms.RandomResizedCrop(image_size, scale=(0.7, 1.0)),
         transforms.ToTensor(),
     ]
+    if hflip:
+        if hflip == 1:
+            hflip = 0.5
+        steps.append(transforms.RandomHorizontalFlip(p=hflip))
     if image_channels == 1:
         # Convert greyscale image to have 3 channels
         steps.append(transforms.Lambda(lambda x: x.repeat(3, 1, 1)))
