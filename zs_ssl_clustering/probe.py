@@ -802,9 +802,13 @@ def run(config):
         # Evaluate on validation set
         t_start_val = time.time()
 
-        if config.eval_interval is not None and (
-            (n_samples_seen // config.eval_interval)
-            == (n_samples_seen_before // config.eval_interval)
+        if (
+            config.eval_interval is not None
+            and epoch > 1
+            and (
+                (n_samples_seen // config.eval_interval)
+                == (n_samples_seen_before // config.eval_interval)
+            )
         ):
             print(f"Skipping {eval_set} set evaluation")
             eval_stats = {}
