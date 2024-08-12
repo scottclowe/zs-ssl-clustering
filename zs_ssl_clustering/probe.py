@@ -2,6 +2,7 @@
 
 import builtins
 import copy
+import math
 import os
 import shutil
 import time
@@ -574,13 +575,28 @@ def run(config):
 
     # Scheduler ---------------------------------------------------------------
     # Set up the learning rate scheduler
-    # TODO: Select by target num samples seen instead of epochs
-    max_step = len(dataloader_train) * config.epochs
+    # First, calculate the total number of steps to train for
+    if config.max_step is not None:
+        config.halt_condition = "max_step"
+        max_step = config.max_step
+    elif config.epochs is not None:
+        config.halt_condition = "epochs"
+        max_step = len(dataloader_train) * config.epochs
+    elif config.presentations is not None:
+        config.halt_condition = "presentations"
+        max_step = math.ceil(config.presentations / config.batch_size)
+    else:
+        raise ValueError(
+            "You must specify either the number of steps, epochs, or stimulus presentations."
+        )
+    config.max_step = max_step
+    if config.epochs is None:
+        config.epochs = math.ceil(max_step / len(dataloader_train))
     if config.scheduler.lower() == "onecycle":
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer,
             [p["lr"] for p in optimizer.param_groups],
-            total_steps=max_step,
+            max_step=max_step,
         )
     elif config.scheduler.lower() == "cosine":
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -753,6 +769,7 @@ def run(config):
             n_epoch=config.epochs,
             curr_step=curr_step,
             n_samples_seen=n_samples_seen,
+            max_step=max_step,
         )
         t_end_train = time.time()
 
@@ -982,6 +999,7 @@ def train_one_epoch(
     n_epoch=None,
     curr_step=0,
     n_samples_seen=0,
+    max_step=None,
 ):
     r"""
     Train the encoder and classifiers for one epoch.
@@ -1012,6 +1030,8 @@ def train_one_epoch(
         The total number of steps taken so far.
     n_samples_seen : int, default=0
         The total number of samples seen so far.
+    max_step : int, optional
+        The maximum number of steps to train for in total.
 
     Returns
     -------
@@ -1040,6 +1060,10 @@ def train_one_epoch(
     t_end_batch = time.time()
     t_start_wandb = t_end_wandb = None
     for batch_idx, (stimuli, y_true) in enumerate(dataloader):
+        if max_step is not None and curr_step >= max_step:
+            # We've reached the maximum number of steps
+            print(f"Reached max_step={max_step}, stopping training.")
+            break
         t_start_batch = time.time()
         batch_size_this_gpu = stimuli.shape[0]
 
@@ -1153,6 +1177,7 @@ def train_one_epoch(
             batch_idx <= 2
             or batch_idx % config.print_interval == 0
             or batch_idx >= len(dataloader) - 1
+            or curr_step >= max_step
         ):
             print(
                 f"Train Epoch:{epoch:4d}"
@@ -1356,11 +1381,21 @@ def get_parser():
     )
     # Optimization args -------------------------------------------------------
     group = parser.add_argument_group("Optimization routine")
-    group.add_argument(
+    mx_group = group.add_mutually_exclusive_group(required=True)
+    mx_group.add_argument(
         "--epochs",
         type=int,
-        default=50,
-        help="Number of epochs to train for. Default: %(default)s",
+        help="Number of epochs to train for.",
+    )
+    mx_group.add_argument(
+        "--max-step",
+        type=int,
+        help="Number of iterations to train for.",
+    )
+    mx_group.add_argument(
+        "--presentations",
+        type=int,
+        help="Number of stimulus presentations to train for.",
     )
     group.add_argument(
         "--lr",
