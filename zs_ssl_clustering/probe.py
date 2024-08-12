@@ -5,6 +5,7 @@ import copy
 import os
 import shutil
 import time
+from collections import defaultdict
 from contextlib import nullcontext
 from datetime import datetime
 from socket import gethostname
@@ -20,7 +21,7 @@ from torch.utils.data.distributed import DistributedSampler
 from zs_ssl_clustering import data_transformations, datasets, encoders, utils
 from zs_ssl_clustering.io import safe_save_model
 
-BASE_BATCH_SIZE = 128
+BASE_BATCH_SIZE = 256
 
 
 def check_is_distributed():
@@ -72,105 +73,6 @@ def setup_slurm_distributed():
         os.environ["MASTER_PORT"] = str(49152 + int(os.environ["SLURM_JOB_ID"]) % 16384)
 
 
-def evaluate(
-    dataloader,
-    model,
-    device,
-    partition_name="Val",
-    verbosity=1,
-    is_distributed=False,
-):
-    r"""
-    Evaluate model performance on a dataset.
-
-    Parameters
-    ----------
-    dataloader : torch.utils.data.DataLoader
-        Dataloader for the dataset to evaluate on.
-    model : torch.nn.Module
-        Model to evaluate.
-    device : torch.device
-        Device to run the model on.
-    partition_name : str, default="Val"
-        Name of the partition being evaluated.
-    verbosity : int, default=1
-        Verbosity level.
-    is_distributed : bool, default=False
-        Whether the model is distributed across multiple GPUs.
-
-    Returns
-    -------
-    results : dict
-        Dictionary of evaluation results.
-    """
-    model.eval()
-
-    y_true_all = []
-    y_pred_all = []
-    xent_all = []
-
-    for stimuli, y_true in dataloader:
-        stimuli = stimuli.to(device)
-        y_true = y_true.to(device)
-        with torch.no_grad():
-            logits = model(stimuli)
-            xent = F.cross_entropy(logits, y_true, reduction="none")
-            y_pred = torch.argmax(logits, dim=-1)
-
-        if is_distributed:
-            # Fetch results from other GPUs
-            xent = utils.concat_all_gather_ragged(xent)
-            y_true = utils.concat_all_gather_ragged(y_true)
-            y_pred = utils.concat_all_gather_ragged(y_pred)
-
-        xent_all.append(xent.cpu().numpy())
-        y_true_all.append(y_true.cpu().numpy())
-        y_pred_all.append(y_pred.cpu().numpy())
-
-    # Concatenate the targets and predictions from each batch
-    xent = np.concatenate(xent_all)
-    y_true = np.concatenate(y_true_all)
-    y_pred = np.concatenate(y_pred_all)
-    # If the dataset size was not evenly divisible by the world size,
-    # DistributedSampler will pad the end of the list of samples
-    # with some repetitions. We need to trim these off.
-    n_samples = len(dataloader.dataset)
-    xent = xent[:n_samples]
-    y_true = y_true[:n_samples]
-    y_pred = y_pred[:n_samples]
-    # Create results dictionary
-    results = {}
-    results["count"] = len(y_true)
-    results["cross-entropy"] = np.mean(xent)
-    # Note that these evaluation metrics have all been converted to percentages
-    results["accuracy"] = 100.0 * sklearn.metrics.accuracy_score(y_true, y_pred)
-    results["accuracy-balanced"] = 100.0 * sklearn.metrics.balanced_accuracy_score(
-        y_true, y_pred
-    )
-    results["f1-micro"] = 100.0 * sklearn.metrics.f1_score(
-        y_true, y_pred, average="micro"
-    )
-    results["f1-macro"] = 100.0 * sklearn.metrics.f1_score(
-        y_true, y_pred, average="macro"
-    )
-    results["f1-support"] = 100.0 * sklearn.metrics.f1_score(
-        y_true, y_pred, average="weighted"
-    )
-    # Could expand to other metrics too
-
-    if verbosity >= 1:
-        print(f"\n{partition_name} evaluation results:")
-        for k, v in results.items():
-            if k == "count":
-                print(f"  {k + ' ':.<21s}{v:7d}")
-            elif "entropy" in k:
-                print(f"  {k + ' ':.<24s} {v:9.5f} nat")
-            else:
-                print(f"  {k + ' ':.<24s} {v:6.2f} %")
-
-    return results
-
-
 def probe_embedding_shape(encoder, input_shape=(3, 224, 224)):
     r"""
     Get the number of features (channels) in a model's output.
@@ -193,6 +95,189 @@ def probe_embedding_shape(encoder, input_shape=(3, 224, 224)):
     n_feature = dummy_output.shape[1]
     encoder.train()
     return n_feature
+
+
+class LinearClassifier(nn.Module):
+    """Linear layer to train on top of frozen features"""
+
+    def __init__(self, out_dim, num_classes=1000):
+        super().__init__()
+        self.out_dim = out_dim
+        self.num_classes = num_classes
+        self.linear = nn.Linear(out_dim, num_classes)
+        self.linear.weight.data.normal_(mean=0.0, std=0.01)
+        self.linear.bias.data.zero_()
+
+    def forward(self, x):
+        return self.linear(x)
+
+
+class AllClassifiers(nn.Module):
+    def __init__(self, classifiers_dict):
+        super().__init__()
+        self.classifiers_dict = nn.ModuleDict()
+        self.classifiers_dict.update(classifiers_dict)
+
+    def forward(self, inputs):
+        return {k: v.forward(inputs) for k, v in self.classifiers_dict.items()}
+
+    def __len__(self):
+        return len(self.classifiers_dict)
+
+
+def scale_lr(lr, batch_size):
+    return lr * batch_size / BASE_BATCH_SIZE
+
+
+def setup_linear_classifiers(out_dim, learning_rates, batch_size, num_classes=1000):
+    """
+    Set up linear classifiers for probing the encoder's output.
+
+    Adapted from:
+    https://github.com/facebookresearch/dinov2/blob/e1277a/dinov2/eval/linear.py#L235
+    """
+    linear_classifiers_dict = nn.ModuleDict()
+    optim_param_groups = []
+    for lr in learning_rates:
+        lr_scaled = scale_lr(lr, batch_size)
+        linear_classifier = nn.Linear(out_dim, num_classes)
+        linear_classifier.weight.data.normal_(mean=0.0, std=0.01)
+        linear_classifier.bias.data.zero_()
+        linear_classifiers_dict[
+            f"classifier_lr_{lr:.5f}".replace(".", "_")
+        ] = linear_classifier
+        optim_param_groups.append(
+            {"params": linear_classifier.parameters(), "lr": lr_scaled}
+        )
+
+    linear_classifiers = AllClassifiers(linear_classifiers_dict)
+
+    return linear_classifiers, optim_param_groups
+
+
+def evaluate(
+    dataloader,
+    encoder,
+    classifiers,
+    device,
+    partition_name="Val",
+    verbosity=1,
+    is_distributed=False,
+):
+    r"""
+    Evaluate model performance on a dataset.
+
+    Parameters
+    ----------
+    dataloader : torch.utils.data.DataLoader
+        Dataloader for the dataset to evaluate on.
+    encoder : torch.nn.Module
+        The encoder model.
+    classifiers : torch.nn.Module
+        The classifiers model.
+    device : torch.device
+        Device to run the model on.
+    partition_name : str, default="Val"
+        Name of the partition being evaluated.
+    verbosity : int, default=1
+        Verbosity level.
+    is_distributed : bool, default=False
+        Whether the model is distributed across multiple GPUs.
+
+    Returns
+    -------
+    results : dict
+        Dictionary of evaluation results.
+    """
+    encoder.eval()
+    classifiers.eval()
+
+    y_true_all = []
+    y_pred_all = defaultdict(list)
+    xent_all = defaultdict(list)
+
+    for stimuli, y_true in dataloader:
+        stimuli = stimuli.to(device)
+        y_true = y_true.to(device)
+        with torch.no_grad():
+            h = encoder(stimuli)
+            outputs = classifiers(h)
+
+        for k, logits in outputs.items():
+            xent = F.cross_entropy(logits, y_true, reduction="none")
+            y_pred = torch.argmax(logits, dim=-1)
+
+            if is_distributed:
+                # Fetch results from other GPUs
+                xent = utils.concat_all_gather_ragged(xent)
+                y_pred = utils.concat_all_gather_ragged(y_pred)
+
+            xent_all[k].append(xent.cpu().numpy())
+            y_pred_all[k].append(y_pred.cpu().numpy())
+
+        if is_distributed:
+            y_true = utils.concat_all_gather_ragged(y_true)
+        y_true_all.append(y_true.cpu().numpy())
+
+    results_all = {}
+    results_flattened = {}
+    best_acc = 0.0
+    best_classifier_name = ""
+    y_true = np.concatenate(y_true_all)
+    for classifier_name in y_pred_all:
+        # Concatenate the targets and predictions from each batch
+        xent = np.concatenate(xent_all[classifier_name])
+        y_pred = np.concatenate(y_pred_all[classifier_name])
+        # If the dataset size was not evenly divisible by the world size,
+        # DistributedSampler will pad the end of the list of samples
+        # with some repetitions. We need to trim these off.
+        n_samples = len(dataloader.dataset)
+        xent = xent[:n_samples]
+        y_true = y_true[:n_samples]
+        y_pred = y_pred[:n_samples]
+        # Create results dictionary
+        results = {}
+        results["count"] = len(y_true)
+        results["cross-entropy"] = np.mean(xent)
+        # Note that these evaluation metrics have all been converted to percentages
+        results["accuracy"] = 100.0 * sklearn.metrics.accuracy_score(y_true, y_pred)
+        results["accuracy-balanced"] = 100.0 * sklearn.metrics.balanced_accuracy_score(
+            y_true, y_pred
+        )
+        results["f1-micro"] = 100.0 * sklearn.metrics.f1_score(
+            y_true, y_pred, average="micro"
+        )
+        results["f1-macro"] = 100.0 * sklearn.metrics.f1_score(
+            y_true, y_pred, average="macro"
+        )
+        results["f1-support"] = 100.0 * sklearn.metrics.f1_score(
+            y_true, y_pred, average="weighted"
+        )
+        # Could expand to other metrics too
+
+        if verbosity >= 1:
+            print(f"\n{partition_name} {classifier_name} evaluation results:")
+            for k, v in results.items():
+                if k == "count":
+                    print(f"  {k + ' ':.<21s}{v:7d}")
+                elif "entropy" in k:
+                    print(f"  {k + ' ':.<24s} {v:9.5f} nat")
+                else:
+                    print(f"  {k + ' ':.<24s} {v:6.2f} %")
+
+        results_all[classifier_name] = results
+        for k, v in results.items():
+            results_flattened[f"{classifier_name}/{k}"] = v
+
+        if results["accuracy"] > best_acc:
+            best_acc = results["accuracy"]
+            best_classifier_name = classifier_name
+
+    results_flattened["best_classifier/name"] = best_classifier_name
+    for k, v in results_all[best_classifier_name].items():
+        results_flattened[f"best_classifier/{k}"] = v
+
+    return results_flattened
 
 
 def run(config):
@@ -339,13 +424,19 @@ def run(config):
     # Build our classifier head
     n_class, _, img_channels = datasets.image_dataset_sizes(config.dataset_name)
     n_feature_out = probe_embedding_shape(encoder)
-    classifier = nn.Linear(n_feature_out, n_class)
+
+    classifiers, optim_param_groups = setup_linear_classifiers(
+        n_feature_out,
+        config.lrs_relative,
+        config.batch_size,
+        n_class,
+    )
 
     # Configure model for distributed training --------------------------------
     print("\nEncoder architecture:")
     print(encoder)
-    print("\nClassifier architecture:")
-    print(classifier)
+    print("\nClassifier architecture(s):")
+    print(classifiers)
     print()
 
     if config.cpu_workers is None:
@@ -356,24 +447,24 @@ def run(config):
     elif config.distributed:
         # Convert batchnorm into SyncBN, using stats computed from all GPUs
         encoder = nn.SyncBatchNorm.convert_sync_batchnorm(encoder)
-        classifier = nn.SyncBatchNorm.convert_sync_batchnorm(classifier)
+        classifiers = nn.SyncBatchNorm.convert_sync_batchnorm(classifiers)
         # For multiprocessing distributed, the DistributedDataParallel
         # constructor should always set a single device scope, otherwise
         # DistributedDataParallel will use all available devices.
         encoder.to(device)
-        classifier.to(device)
+        classifiers.to(device)
         torch.cuda.set_device(device)
         encoder = nn.parallel.DistributedDataParallel(
             encoder, device_ids=[config.local_rank], output_device=config.local_rank
         )
-        classifier = nn.parallel.DistributedDataParallel(
-            classifier, device_ids=[config.local_rank], output_device=config.local_rank
+        classifiers = nn.parallel.DistributedDataParallel(
+            classifiers, device_ids=[config.local_rank], output_device=config.local_rank
         )
     else:
         if config.local_rank is not None:
             torch.cuda.set_device(config.local_rank)
         encoder = encoder.to(device)
-        classifier = classifier.to(device)
+        classifiers = classifiers.to(device)
 
     # DATASET =================================================================
 
@@ -466,45 +557,24 @@ def run(config):
     # Optimizer ---------------------------------------------------------------
     # Set up the optimizer
 
-    # Bigger batch sizes mean better estimates of the gradient, so we can use a
-    # bigger learning rate. See https://arxiv.org/abs/1706.02677
-    # Hence we scale the learning rate linearly with the total batch size.
-    config.lr = config.lr_relative * config.batch_size / BASE_BATCH_SIZE
-
     # Freeze the encoder, if requested
     if config.freeze_encoder:
         for m in encoder.parameters():
             m.requires_grad = False
-
-    # Set up a parameter group for each component of the model, allowing
-    # them to have different learning rates (for fine-tuning encoder).
-    params = []
-    if not config.freeze_encoder:
-        params.append(
-            {
-                "params": encoder.parameters(),
-                "lr": config.lr * config.lr_encoder_mult,
-                "name": "encoder",
-            }
-        )
-    params.append(
-        {
-            "params": classifier.parameters(),
-            "lr": config.lr * config.lr_classifier_mult,
-            "name": "classifier",
-        }
-    )
+    else:
+        raise NotImplementedError("Fine-tuning the encoder is not supported.")
 
     # Fetch the constructor of the appropriate optimizer from torch.optim
     optim_kwargs = {}
     if config.optimizer == "SGD":
         optim_kwargs["momentum"] = 0.9
     optimizer = getattr(torch.optim, config.optimizer)(
-        params, lr=config.lr, weight_decay=config.weight_decay, **optim_kwargs
+        optim_param_groups, weight_decay=config.weight_decay, **optim_kwargs
     )
 
     # Scheduler ---------------------------------------------------------------
     # Set up the learning rate scheduler
+    # TODO: Select by target num samples seen instead of epochs
     total_steps = len(dataloader_train) * config.epochs
     if config.scheduler.lower() == "onecycle":
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
@@ -606,7 +676,7 @@ def run(config):
         n_samples_seen = checkpoint["n_samples_seen"]
         if "encoder" in checkpoint:
             encoder.load_state_dict(checkpoint["encoder"])
-        classifier.load_state_dict(checkpoint["classifier"])
+        classifiers.load_state_dict(checkpoint["classifiers"])
         optimizer.load_state_dict(checkpoint["optimizer"])
         scheduler.load_state_dict(checkpoint["scheduler"])
         best_stats["max_accuracy"] = checkpoint.get("max_accuracy", 0)
@@ -621,12 +691,7 @@ def run(config):
 
     # Ensure modules are on the correct device
     encoder = encoder.to(device)
-    classifier = classifier.to(device)
-
-    # Stack the encoder and classifier together to create an overall model.
-    # At inference time, we don't need to make a distinction between modules
-    # within this stack.
-    model = nn.Sequential(encoder, classifier)
+    classifiers = classifiers.to(device)
 
     timing_stats = {}
     t_end_epoch = time.time()
@@ -678,7 +743,7 @@ def run(config):
         train_stats, total_step, n_samples_seen = train_one_epoch(
             config=config,
             encoder=encoder,
-            classifier=classifier,
+            classifiers=classifiers,
             optimizer=optimizer,
             scheduler=scheduler,
             criterion=criterion,
@@ -716,7 +781,8 @@ def run(config):
 
         eval_stats = evaluate(
             dataloader=dataloader_val,
-            model=model,
+            encoder=encoder,
+            classifiers=classifiers,
             device=device,
             partition_name=eval_set,
             is_distributed=config.distributed,
@@ -726,8 +792,8 @@ def run(config):
         eval_stats["throughput"] = len(dataloader_val.dataset) / timing_stats["val"]
 
         # Check if this is the new best model
-        if eval_stats["accuracy"] >= best_stats["max_accuracy"]:
-            best_stats["max_accuracy"] = eval_stats["accuracy"]
+        if eval_stats["best_classifier/accuracy"] >= best_stats["max_accuracy"]:
+            best_stats["max_accuracy"] = eval_stats["best_classifier/accuracy"]
             best_stats["best_epoch"] = epoch
 
         print(f"Evaluating epoch {epoch}/{config.epochs} summary:")
@@ -740,8 +806,10 @@ def run(config):
         else:
             print(f"  Duration ...........{timing_stats['val']:11.2f} seconds")
         print(f"  Throughput .........{eval_stats['throughput']:11.2f} samples/sec")
-        print(f"  Cross-entropy ......{eval_stats['cross-entropy']:14.5f}")
-        print(f"  Accuracy ...........{eval_stats['accuracy']:11.2f} %")
+        print(
+            f"  Cross-entropy ......{eval_stats['best_classifier/cross-entropy']:14.5f}"
+        )
+        print(f"  Accuracy ...........{eval_stats['best_classifier/accuracy']:11.2f} %")
 
         # Save model ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         t_start_save = time.time()
@@ -749,7 +817,7 @@ def run(config):
             not config.distributed or config.global_rank == 0
         ):
             save_dict = {
-                "classifier": classifier,
+                "classifiers": classifiers,
                 "optimizer": optimizer,
                 "scheduler": scheduler,
             }
@@ -811,18 +879,27 @@ def run(config):
     )
 
     # TEST ====================================================================
+    # TODO: Make this work even if we are pre-empted after the last epoch
+    selected_classifier_name = eval_stats["best_classifier/name"]
+
     print(f"\nEvaluating final model (epoch {config.epochs}) performance")
     # Evaluate on test set
     print("\nEvaluating final model on test set...")
     eval_stats = evaluate(
         dataloader=dataloader_test,
-        model=model,
+        encoder=encoder,
+        classifiers=classifiers,
         device=device,
         partition_name="Test",
         is_distributed=config.distributed,
     )
     # Send stats to wandb
     if config.log_wandb and config.global_rank == 0:
+        for k in eval_stats:
+            if not k.startswith(selected_classifier_name):
+                continue
+            k2 = k.replace(selected_classifier_name, "selected_classifier", 1)
+            eval_stats[k2] = eval_stats[k]
         wandb.log(
             {**{f"Eval/Test/{k}": v for k, v in eval_stats.items()}}, step=total_step
         )
@@ -832,13 +909,19 @@ def run(config):
         print(f"\nEvaluating final model on {eval_set} set...")
         eval_stats = evaluate(
             dataloader=dataloader_val,
-            model=model,
+            encoder=encoder,
+            classifiers=classifiers,
             device=device,
             partition_name=eval_set,
             is_distributed=config.distributed,
         )
         # Send stats to wandb
         if config.log_wandb and config.global_rank == 0:
+            for k in eval_stats:
+                if not k.startswith(selected_classifier_name):
+                    continue
+                k2 = k.replace(selected_classifier_name, "selected_classifier", 1)
+                eval_stats[k2] = eval_stats[k]
             wandb.log(
                 {**{f"Eval/{eval_set}/{k}": v for k, v in eval_stats.items()}},
                 step=total_step,
@@ -868,13 +951,19 @@ def run(config):
     )
     eval_stats = evaluate(
         dataloader=dataloader_train_eval,
-        model=model,
+        encoder=encoder,
+        classifiers=classifiers,
         device=device,
         partition_name="Train",
         is_distributed=config.distributed,
     )
     # Send stats to wandb
     if config.log_wandb and config.global_rank == 0:
+        for k in eval_stats:
+            if not k.startswith(selected_classifier_name):
+                continue
+            k2 = k.replace(selected_classifier_name, "selected_classifier", 1)
+            eval_stats[k2] = eval_stats[k]
         wandb.log(
             {**{f"Eval/Train/{k}": v for k, v in eval_stats.items()}}, step=total_step
         )
@@ -883,7 +972,7 @@ def run(config):
 def train_one_epoch(
     config,
     encoder,
-    classifier,
+    classifiers,
     optimizer,
     scheduler,
     criterion,
@@ -895,7 +984,7 @@ def train_one_epoch(
     n_samples_seen=0,
 ):
     r"""
-    Train the encoder and classifier for one epoch.
+    Train the encoder and classifiers for one epoch.
 
     Parameters
     ----------
@@ -903,8 +992,8 @@ def train_one_epoch(
         The global config object.
     encoder : torch.nn.Module
         The encoder network.
-    classifier : torch.nn.Module
-        The classifier network.
+    classifiers : torch.nn.Module
+        The linear classifiers.
     optimizer : torch.optim.Optimizer
         The optimizer.
     scheduler : torch.optim.lr_scheduler._LRScheduler
@@ -935,14 +1024,14 @@ def train_one_epoch(
     """
     # Put the model in train mode
     encoder.train()
-    classifier.train()
+    classifiers.train()
 
     if config.log_wandb:
         # Lazy import of wandb, since logging to wandb is optional
         import wandb
 
     loss_epoch = 0
-    acc_epoch = 0
+    acc_epoch = defaultdict(lambda: 0)
 
     if config.print_interval is None:
         # Default to printing to console every time we log to wandb
@@ -966,11 +1055,13 @@ def train_one_epoch(
         ct_forward.record()
         with torch.no_grad() if config.freeze_encoder else nullcontext():
             h = encoder(stimuli)
-        logits = classifier(h)
+        outputs = classifiers(h)
+
         # Reset gradients
         optimizer.zero_grad()
         # Measure loss
-        loss = criterion(logits, y_true)
+        losses = {f"loss_{k}": criterion(v, y_true) for k, v in outputs.items()}
+        loss = sum(losses.values())
 
         # Backward pass -------------------------------------------------------
         # Now the backward pass
@@ -1008,27 +1099,34 @@ def train_one_epoch(
         loss_epoch += loss_batch
 
         # Compute accuracy
+        acc_values = {}
+        acc_max = 0
+        best_classifier = ""
         with torch.no_grad():
-            y_pred = torch.argmax(logits, dim=-1)
-            is_correct = y_pred == y_true
-            acc = 100.0 * is_correct.sum() / len(is_correct)
-            if config.distributed:
-                # Fetch results from other GPUs
-                acc = torch.mean(utils.concat_all_gather(acc.reshape((1,))))
-            acc = acc.item()
-            acc_epoch += acc
+            for k, logits in outputs.items():
+                y_pred = torch.argmax(logits, dim=-1)
+                is_correct = y_pred == y_true
+                acc = 100.0 * is_correct.sum() / len(is_correct)
+                if config.distributed:
+                    # Fetch results from other GPUs
+                    acc = torch.mean(utils.concat_all_gather(acc.reshape((1,))))
+                acc = acc.item()
+                acc_values[k] = acc
+                acc_epoch[k] += acc
+                if acc > acc_max:
+                    acc_max = acc
+                    best_classifier = k
 
         if epoch <= 1 and batch_idx == 0:
             # Debugging
             print("stimuli.shape =", stimuli.shape)
             print("y_true.shape  =", y_true.shape)
             print("y_pred.shape  =", y_pred.shape)
-            print("logits.shape  =", logits.shape)
+            print("len(outputs)  =", len(outputs))
             print("loss.shape    =", loss.shape)
             # Debugging intensifies
             print("y_true =", y_true)
             print("y_pred =", y_pred)
-            print("logits[0] =", logits[0])
             print("loss =", loss.detach().item())
 
         # Log sample training images to show on wandb
@@ -1061,7 +1159,7 @@ def train_one_epoch(
                 + (f"/{n_epoch}" if n_epoch is not None else ""),
                 " Step:{:4d}/{}".format(batch_idx + 1, len(dataloader)),
                 " Loss:{:8.5f}".format(loss_batch),
-                " Acc:{:6.2f}%".format(acc),
+                " Acc:{:6.2f}%".format(acc_max),
                 " LR: {}".format(scheduler.get_last_lr()),
             )
 
@@ -1082,8 +1180,11 @@ def train_one_epoch(
                 "Training/stepwise/n_samples_seen": n_samples_seen,
                 "Training/stepwise/Train/throughput": throughput,
                 "Training/stepwise/Train/loss": loss_batch,
-                "Training/stepwise/Train/accuracy": acc,
+                "Training/stepwise/Train/accuracy": acc_max,
+                "Training/stepwise/Train/best_classifier": best_classifier,
             }
+            for k, v in acc_values.items():
+                log_dict[f"Training/stepwise/Train/accuracies/{k}"] = v
             # Track the learning rate of each parameter group
             for lr_idx in range(len(optimizer.param_groups)):
                 if "name" in optimizer.param_groups[lr_idx]:
@@ -1091,11 +1192,9 @@ def train_one_epoch(
                 elif len(optimizer.param_groups) == 1:
                     grp_name = ""
                 else:
-                    grp_name = f"grp{lr_idx}"
-                if grp_name != "":
-                    grp_name = f"-{grp_name}"
+                    grp_name = f"{lr_idx}"
                 grp_lr = optimizer.param_groups[lr_idx]["lr"]
-                log_dict[f"Training/stepwise/lr{grp_name}"] = grp_lr
+                log_dict[f"Training/stepwise/lrs/{grp_name}"] = grp_lr
             # Synchronize ensures everything has finished running on each GPU
             torch.cuda.synchronize()
             # Record how long it took to do each step in the pipeline
@@ -1120,7 +1219,7 @@ def train_one_epoch(
 
     results = {
         "loss": loss_epoch / len(dataloader),
-        "accuracy": acc_epoch / len(dataloader),
+        "accuracy": max(acc_epoch.values()) / len(dataloader),
     }
     return results, total_step, n_samples_seen
 
@@ -1265,26 +1364,30 @@ def get_parser():
     )
     group.add_argument(
         "--lr",
-        dest="lr_relative",
+        dest="lrs_relative",
+        nargs="+",
         type=float,
-        default=0.01,
+        default=(
+            1e-5,
+            2e-5,
+            5e-5,
+            1e-4,
+            2e-4,
+            5e-4,
+            1e-3,
+            2e-3,
+            5e-3,
+            1e-2,
+            2e-2,
+            5e-2,
+            0.1,
+        ),
         help=(
             f"Maximum learning rate, set per {BASE_BATCH_SIZE} batch size."
             " The actual learning rate used will be scaled up by the total"
-            " batch size (across all GPUs). Default: %(default)s"
+            " batch size (across all GPUs). Multiple LRs can be specified"
+            " to perform a grid search over them. Default: %(default)s"
         ),
-    )
-    group.add_argument(
-        "--lr-encoder-mult",
-        type=float,
-        default=1.0,
-        help="Multiplier for encoder learning rate, relative to overall LR.",
-    )
-    group.add_argument(
-        "--lr-classifier-mult",
-        type=float,
-        default=1.0,
-        help="Multiplier for classifier head's learning rate, relative to overall LR.",
     )
     group.add_argument(
         "--weight-decay",
@@ -1297,13 +1400,13 @@ def get_parser():
     group.add_argument(
         "--optimizer",
         type=str,
-        default="AdamW",
+        default="SGD",
         help="Name of optimizer (case-sensitive). Default: %(default)s",
     )
     group.add_argument(
         "--scheduler",
         type=str,
-        default="OneCycle",
+        default="cosine",
         help="Learning rate scheduler. Default: %(default)s",
     )
     # Output checkpoint args --------------------------------------------------
