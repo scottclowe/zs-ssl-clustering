@@ -796,37 +796,46 @@ def run(config):
         # Evaluate on validation set
         t_start_val = time.time()
 
-        eval_stats = evaluate(
-            dataloader=dataloader_val,
-            encoder=encoder,
-            classifiers=classifiers,
-            device=device,
-            partition_name=eval_set,
-            is_distributed=config.distributed,
-        )
-        t_end_val = time.time()
-        timing_stats["val"] = t_end_val - t_start_val
-        eval_stats["throughput"] = len(dataloader_val.dataset) / timing_stats["val"]
-
-        # Check if this is the new best model
-        if eval_stats["best_classifier/accuracy"] >= best_stats["max_accuracy"]:
-            best_stats["max_accuracy"] = eval_stats["best_classifier/accuracy"]
-            best_stats["best_epoch"] = epoch
-
-        print(f"Evaluating epoch {epoch}/{config.epochs} summary:")
-        if timing_stats["val"] > 172800:
-            print(f"  Duration ...........{timing_stats['val']/86400:11.2f} days")
-        elif timing_stats["val"] > 5400:
-            print(f"  Duration ...........{timing_stats['val']/3600:11.2f} hours")
-        elif timing_stats["val"] > 120:
-            print(f"  Duration ...........{timing_stats['val']/60:11.2f} minutes")
+        if config.eval_interval is not None and (
+            (n_samples_seen // config.eval_interval)
+            == (n_samples_seen_before // config.eval_interval)
+        ):
+            print(f"Skipping {eval_set} set evaluation")
+            eval_stats = {}
         else:
-            print(f"  Duration ...........{timing_stats['val']:11.2f} seconds")
-        print(f"  Throughput .........{eval_stats['throughput']:11.2f} samples/sec")
-        print(
-            f"  Cross-entropy ......{eval_stats['best_classifier/cross-entropy']:14.5f}"
-        )
-        print(f"  Accuracy ...........{eval_stats['best_classifier/accuracy']:11.2f} %")
+            eval_stats = evaluate(
+                dataloader=dataloader_val,
+                encoder=encoder,
+                classifiers=classifiers,
+                device=device,
+                partition_name=eval_set,
+                is_distributed=config.distributed,
+            )
+            t_end_val = time.time()
+            timing_stats["val"] = t_end_val - t_start_val
+            eval_stats["throughput"] = len(dataloader_val.dataset) / timing_stats["val"]
+
+            # Check if this is the new best model
+            if eval_stats["best_classifier/accuracy"] >= best_stats["max_accuracy"]:
+                best_stats["max_accuracy"] = eval_stats["best_classifier/accuracy"]
+                best_stats["best_epoch"] = epoch
+
+            print(f"Evaluating epoch {epoch}/{config.epochs} summary:")
+            if timing_stats["val"] > 172800:
+                print(f"  Duration ...........{timing_stats['val']/86400:11.2f} days")
+            elif timing_stats["val"] > 5400:
+                print(f"  Duration ...........{timing_stats['val']/3600:11.2f} hours")
+            elif timing_stats["val"] > 120:
+                print(f"  Duration ...........{timing_stats['val']/60:11.2f} minutes")
+            else:
+                print(f"  Duration ...........{timing_stats['val']:11.2f} seconds")
+            print(f"  Throughput .........{eval_stats['throughput']:11.2f} samples/sec")
+            print(
+                f"  Cross-entropy ......{eval_stats['best_classifier/cross-entropy']:14.5f}"
+            )
+            print(
+                f"  Accuracy ...........{eval_stats['best_classifier/accuracy']:11.2f} %"
+            )
 
         # Save model ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         t_start_save = time.time()
@@ -1529,6 +1538,11 @@ def get_parser():
         type=int,
         default=None,
         help="Number of batches between each print to STDOUT. Default: same as LOG_INTERVAL.",
+    )
+    group.add_argument(
+        "--eval-interval",
+        type=int,
+        help="Number of stimuli to process between each evaluation. Default: every epoch.",
     )
     group.add_argument(
         "--log-wandb",
