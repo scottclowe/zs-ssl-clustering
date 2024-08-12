@@ -912,11 +912,12 @@ def run(config):
     )
     # Send stats to wandb
     if config.log_wandb and config.global_rank == 0:
-        for k in eval_stats:
-            if not k.startswith(selected_classifier_name):
-                continue
-            k2 = k.replace(selected_classifier_name, "selected_classifier", 1)
-            eval_stats[k2] = eval_stats[k]
+        extras = {
+            k.replace(selected_classifier_name, "selected_classifier", 1): v
+            for k, v in eval_stats.items()
+            if k.startswith(selected_classifier_name)
+        }
+        eval_stats.update(extras)
         wandb.log(
             {**{f"Eval/Test/{k}": v for k, v in eval_stats.items()}}, step=curr_step
         )
@@ -934,11 +935,12 @@ def run(config):
         )
         # Send stats to wandb
         if config.log_wandb and config.global_rank == 0:
-            for k in eval_stats:
-                if not k.startswith(selected_classifier_name):
-                    continue
-                k2 = k.replace(selected_classifier_name, "selected_classifier", 1)
-                eval_stats[k2] = eval_stats[k]
+            extras = {
+                k.replace(selected_classifier_name, "selected_classifier", 1): v
+                for k, v in eval_stats.items()
+                if k.startswith(selected_classifier_name)
+            }
+            eval_stats.update(extras)
             wandb.log(
                 {**{f"Eval/{eval_set}/{k}": v for k, v in eval_stats.items()}},
                 step=curr_step,
@@ -976,11 +978,12 @@ def run(config):
     )
     # Send stats to wandb
     if config.log_wandb and config.global_rank == 0:
-        for k in eval_stats:
-            if not k.startswith(selected_classifier_name):
-                continue
-            k2 = k.replace(selected_classifier_name, "selected_classifier", 1)
-            eval_stats[k2] = eval_stats[k]
+        extras = {
+            k.replace(selected_classifier_name, "selected_classifier", 1): v
+            for k, v in eval_stats.items()
+            if k.startswith(selected_classifier_name)
+        }
+        eval_stats.update(extras)
         wandb.log(
             {**{f"Eval/Train/{k}": v for k, v in eval_stats.items()}}, step=curr_step
         )
