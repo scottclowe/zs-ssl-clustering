@@ -1259,9 +1259,12 @@ def train_one_epoch(
         # Record the time when we finished this batch
         t_end_batch = time.time()
 
+    for k, v in acc_epoch.items():
+        acc_epoch[k] = v / len(dataloader)
     results = {
         "loss": loss_epoch / len(dataloader),
-        "accuracy": max(acc_epoch.values()) / len(dataloader),
+        "accuracy": max(acc_epoch.values()),
+        **acc_epoch,
     }
     return results, curr_step, n_samples_seen
 
