@@ -365,7 +365,9 @@ def run(config):
     print(f"Using device {device}")
 
     # RESTORE OMITTED CONFIG FROM RESUMPTION CHECKPOINT =======================
+    forked = False
     checkpoint = None
+    ckpt_path_to_load = None
     config.model_output_dir = None
     if config.checkpoint_path:
         config.model_output_dir = os.path.dirname(config.checkpoint_path)
@@ -380,9 +382,15 @@ def run(config):
             f"Skipping premature resumption from preemption: no checkpoint file found at '{config.checkpoint_path}'"
         )
     else:
-        print(f"Loading resumption checkpoint '{config.checkpoint_path}'")
+        ckpt_path_to_load = config.checkpoint_path
+    if ckpt_path_to_load is None and config.resume_path:
+        ckpt_path_to_load = config.resume_path
+        forked = True
+
+    if ckpt_path_to_load:
+        print(f"Loading resumption checkpoint '{ckpt_path_to_load}'")
         # Map model parameters to be load to the specified gpu.
-        checkpoint = torch.load(config.checkpoint_path, map_location=device)
+        checkpoint = torch.load(ckpt_path_to_load, map_location=device)
         required_args = ["--max-step", "1"]
         keys = vars(get_parser().parse_args(required_args)).keys()
         keys = set(keys).difference(
@@ -633,6 +641,11 @@ def run(config):
             "run_id",
             "model_output_dir",
         ]
+        fork_from = (
+            f"{checkpoint['config'].run_id}?_step={checkpoint['curr_step']}"
+            if forked
+            else None
+        )
         utils.init_or_resume_wandb_run(
             config.model_output_dir,
             name=wandb_run_name,
@@ -644,6 +657,7 @@ def run(config):
             ),
             job_type="train",
             tags=["prototype" if config.prototyping else "final"],
+            fork_from=fork_from,
         )
         # If a run_id was not supplied at the command prompt, wandb will
         # generate a name. Let's use that as the run_name.
@@ -1497,6 +1511,17 @@ def get_parser():
         help=(
             "Save and resume partially trained model and optimizer state from this checkpoint."
             " Overrides --models-dir."
+        ),
+    )
+    group.add_argument(
+        "--resume",
+        dest="resume_path",
+        default="",
+        type=str,
+        metavar="PATH",
+        help=(
+            "Save and resume partially trained model and optimizer state from this checkpoint."
+            " Ignored if --checkpoint is present."
         ),
     )
     group.add_argument(
