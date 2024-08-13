@@ -365,7 +365,6 @@ def run(config):
     print(f"Using device {device}")
 
     # RESTORE OMITTED CONFIG FROM RESUMPTION CHECKPOINT =======================
-    forked = False
     checkpoint = None
     ckpt_path_to_load = None
     config.model_output_dir = None
@@ -385,7 +384,6 @@ def run(config):
         ckpt_path_to_load = config.checkpoint_path
     if ckpt_path_to_load is None and config.resume_path:
         ckpt_path_to_load = config.resume_path
-        forked = True
 
     if ckpt_path_to_load:
         print(f"Loading resumption checkpoint '{ckpt_path_to_load}'")
@@ -409,6 +407,11 @@ def run(config):
                     f"  Warning: config value for {key} differs from checkpoint:"
                     f" {getattr(config, key)} (ours) vs {getattr(checkpoint['config'], key)} (checkpoint)"
                 )
+                if config.resume_path and (key == "run_id"):
+                    print(
+                        f"  Using run_id from original run: {checkpoint['config'].run_id}"
+                    )
+                    config.run_id = checkpoint["config"].run_id
 
     if checkpoint is None:
         # Our epochs go from 1 to n_epoch, inclusive
@@ -641,15 +644,10 @@ def run(config):
             "run_id",
             "model_output_dir",
         ]
-        fork_from = (
-            f"{checkpoint['config'].run_id}?_step={checkpoint['curr_step']}"
-            if forked
-            else None
-        )
-        utils.init_or_resume_wandb_run(
-            config.model_output_dir,
+        wandb.init(
             name=wandb_run_name,
             id=config.run_id,
+            resume="must" if ckpt_path_to_load else None,
             entity=config.wandb_entity,
             project=config.wandb_project,
             config=wandb.helper.parse_config(
@@ -657,7 +655,6 @@ def run(config):
             ),
             job_type="train",
             tags=["prototype" if config.prototyping else "final"],
-            fork_from=fork_from,
         )
         # If a run_id was not supplied at the command prompt, wandb will
         # generate a name. Let's use that as the run_name.
