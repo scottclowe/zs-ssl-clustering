@@ -111,6 +111,7 @@ def run(config):
                 "run_name",
                 "run_id",
             ],
+            settings=wandb.Settings(_service_wait=300),
         )
         # If a run_id was not supplied at the command prompt, wandb will
         # generate a name. Let's use that as the run_id.
