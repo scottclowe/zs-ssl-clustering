@@ -1376,7 +1376,7 @@ def get_parser():
     )
     group.add_argument(
         "--hflip",
-        type=int,
+        type=float,
         default=0,
         nargs="?",
         const=0.5,
