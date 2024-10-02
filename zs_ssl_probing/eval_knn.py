@@ -22,18 +22,19 @@ import torch.nn as nn
 from torchvision import datasets
 
 
-def relabel(cs):
-    cs = cs.copy()
-    d = {}
-    k = 0
-    for i in range(len(cs)):
-        j = cs[i]
-        if j not in d:
-            d[j] = k
-            k += 1
-        cs[i] = d[j]
-
-    return cs
+def relabel(cs_train, cs_test):
+    cs_train = cs_train.copy()
+    cs_test = cs_test.copy()
+    unq_idx = np.unique(np.concatenate([cs_train, cs_test]))
+    d = {idx: unq_idx[idx] for idx in range(len(unq_idx))}
+    for i in range(len(cs_train)):
+        j = cs_train[i]
+        cs_train[i] = d[j]
+    for i in range(len(cs_test)):
+        j = cs_test[i]
+        cs_test[i] = d[j]
+    print(d)
+    return cs_train, cs_test
 
 
 @torch.no_grad()
@@ -46,6 +47,7 @@ def knn_classifier(
     imgs_per_chunk = 500
     retrieval_one_hot = torch.zeros(k, num_classes).to(train_features.device)
     aggregated_predictions = None
+
     for idx in range(0, num_test_images, imgs_per_chunk):
         # get the features for test images
         features = test_features[idx : min((idx + imgs_per_chunk), num_test_images), :]
@@ -91,7 +93,7 @@ def knn_classifier(
     top1 = top1 * 100.0 / total
     top5 = top5 * 100.0 / total
 
-    return top1, top5, aggregated_predictions.numpy()
+    return top1, top5, aggregated_predictions.cpu().numpy()
 
 
 class ReturnIndexDataset(datasets.ImageFolder):
@@ -159,7 +161,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     print(
-        "\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items()))
+        "/n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items()))
     )
     cudnn.benchmark = True
 
@@ -181,8 +183,12 @@ if __name__ == "__main__":
     else:
         test_load_features = args.load_features
 
-    train_dict = np.load(os.path.join(args.train_feat_dir, train_load_features))
-    test_dict = np.load(os.path.join(args.test_feat_dir, test_load_features))
+    train_dict = np.load(
+        os.path.join(args.train_feat_dir, train_load_features), allow_pickle=True
+    )
+    test_dict = np.load(
+        os.path.join(args.test_feat_dir, test_load_features), allow_pickle=True
+    )
 
     train_features = torch.tensor(train_dict["embeddings"], dtype=torch.float32)
     train_labels = train_dict["y_true"]
@@ -198,8 +204,7 @@ if __name__ == "__main__":
     train_features = nn.functional.normalize(train_features, dim=1, p=2)
     test_features = nn.functional.normalize(test_features, dim=1, p=2)
 
-    train_labels = relabel(train_labels)
-    test_labels = relabel(test_labels)
+    train_labels, test_labels = relabel(train_labels, test_labels)
 
     classes_train, num_classes_train = np.unique(train_labels, return_counts=True)
     classes_test, num_classes_test = np.unique(test_labels, return_counts=True)
@@ -225,7 +230,7 @@ if __name__ == "__main__":
 
     result_dict = {"k": [], "top1": [], "top5": []}
     for k in args.nb_knn:
-        top1, top5, predictions = knn_classifier(
+        top1, top5, predictions, debug_dict = knn_classifier(
             train_features,
             train_labels,
             test_features,
@@ -252,7 +257,7 @@ if __name__ == "__main__":
         )
 
         pred_df = pd.DataFrame.from_dict(
-            {"y_pred": predictions, "y_true": test_labels.numpy()}
+            {"y_pred": predictions, "y_true": test_labels.cpu().numpy()}
         )
         pred_df.to_csv(
             os.path.join(
