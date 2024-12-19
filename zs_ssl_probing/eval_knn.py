@@ -26,7 +26,7 @@ def relabel(cs_train, cs_test):
     cs_train = cs_train.copy()
     cs_test = cs_test.copy()
     unq_idx = np.unique(np.concatenate([cs_train, cs_test]))
-    d = {idx: unq_idx[idx] for idx in range(len(unq_idx))}
+    d = {unq_idx[idx]: idx for idx in range(len(unq_idx))}
     for i in range(len(cs_train)):
         j = cs_train[i]
         cs_train[i] = d[j]
