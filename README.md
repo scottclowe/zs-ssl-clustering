@@ -1,10 +1,10 @@
 Zero-shot SSL clustering
-------------------------
+========================
 
 Work in progress
 
 Citation
-========
+--------
 
 If you find this work insightful, please consider citing [our paper](https://arxiv.org/abs/2406.02465).
 
