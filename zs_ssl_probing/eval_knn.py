@@ -136,13 +136,13 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--output_dir",
-        default=None,
+        default="./knn_probe_output",
         help="""If the features have
         already been computed, where to find them.""",
     )
     parser.add_argument(
         "--output_dir_pred",
-        default=None,
+        default="./knn_probe_predictions",
         help="""If the features have
         already been computed, where to find them.""",
     )
@@ -165,14 +165,8 @@ if __name__ == "__main__":
     )
     cudnn.benchmark = True
 
-    if args.output_dir is None:
-        args.output_dir = "./knn_probe_output"
-
     os.makedirs(args.output_dir, exist_ok=True)
     print(args.output_dir)
-
-    if args.output_dir_pred is None:
-        args.output_dir_pred = "./knn_probe_predictions"
 
     os.makedirs(args.output_dir_pred, exist_ok=True)
     print(args.output_dir_pred)
