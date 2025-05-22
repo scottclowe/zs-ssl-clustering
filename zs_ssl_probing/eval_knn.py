@@ -189,6 +189,11 @@ if __name__ == "__main__":
     test_features = torch.tensor(test_dict["embeddings"], dtype=torch.float32)
     test_labels = test_dict["y_true"]
 
+    if len(train_features) != len(train_labels):
+        raise ValueError("The number of training features and labels do not match")
+    if len(test_features) != len(test_labels):
+        raise ValueError("The number of training features and labels do not match")
+
     print(train_features.shape, train_features.dtype)
     print(train_labels.shape, train_labels.dtype)
     print(test_features.shape, test_features.dtype)
