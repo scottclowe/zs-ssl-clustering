@@ -230,7 +230,7 @@ if __name__ == "__main__":
 
     result_dict = {"k": [], "top1": [], "top5": []}
     for k in args.nb_knn:
-        top1, top5, predictions, debug_dict = knn_classifier(
+        top1, top5, predictions = knn_classifier(
             train_features,
             train_labels,
             test_features,
