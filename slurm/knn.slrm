@@ -1,0 +1,149 @@
+#!/bin/bash
+#SBATCH --partition=t4v2            # Which node partitions to use. Use a comma-separated list if you don't mind which partition: t4v1,t4v2,rtx6000,a40
+#SBATCH --nodes=1                   # Number of nodes to request. Can increase to --nodes=2, etc, for more GPUs (spread out over different nodes).
+#SBATCH --tasks-per-node=1          # Number of processes to spawn per node. Should always be set to 1, regardless of number of GPUs!
+#SBATCH --gres=gpu:1                # Number of GPUs per node. Can increase to --gres=gpu:2, etc, for more GPUs (together on the same node).
+#SBATCH --cpus-per-gpu=2            # Number of CPUs per GPU. Soft maximum of 4 per GPU requested on t4, 8 otherwise. Hard maximum of 32 per node.
+#SBATCH --mem-per-gpu=10G           # RAM per GPU. Soft maximum of 20G per GPU requested on t4v2, 41G otherwise. Hard maximum of 167G per node.
+#SBATCH --time=01:00:00             # You must specify a maximum run-time if you want to run for more than 2h
+#SBATCH --output=slogs/%x__%A_%a.out
+                                    # %x=job-name, %A=job ID, %a=array value, %n=node rank, %t=task rank, %N=hostname
+                                    # Note: You must create output directory "slogs" before launching job, otherwise it will immediately
+                                    # fail without an error message.
+                                    # Note: If you specify --output and not --error, then both STDOUT and STDERR will both be sent to the
+                                    # file specified by --output.
+#SBATCH --array=0                   # Use array to run multiple jobs that are identical except for $SLURM_ARRAY_TASK_ID.
+                                    # In this example, we use this to set the seed. You can run multiple seeds with --array=0-4, for example.
+#SBATCH --open-mode=append          # Use append mode otherwise preemption resets the checkpoint file.
+#SBATCH --job-name=zsc-knn         # Set this to be a shorthand for your project's name.
+
+# Manually define the project name.
+# This must also be the name of your conda environment used for this project.
+PROJECT_NAME="zs-ssl-clustering"
+# Automatically convert hyphens to underscores, to get the name of the project directory.
+PROJECT_DIRN="${PROJECT_NAME//-/_}"
+
+# Exit the script if any command hits an error
+set -e
+
+# sbatch script for Vector
+# Inspired by:
+# https://github.com/VectorInstitute/TechAndEngineering/blob/master/benchmarks/resnet_torch/sample_script/script.sh
+# https://github.com/VectorInstitute/TechAndEngineering/blob/master/checkpoint_examples/PyTorch/launch_job.slrm
+# https://github.com/VectorInstitute/TechAndEngineering/blob/master/checkpoint_examples/PyTorch/run_train.sh
+# https://github.com/PrincetonUniversity/multi_gpu_training/tree/main/02_pytorch_ddp
+# https://pytorch.org/docs/stable/elastic/run.html
+# https://pytorch.org/tutorials/intermediate/ddp_tutorial.html
+# https://unix.stackexchange.com/a/146770/154576
+
+# Store the time at which the script was launched, so we can measure how long has elapsed.
+start_time="$SECONDS"
+
+echo "Job $SLURM_JOB_NAME ($SLURM_JOB_ID) begins on $(hostname), submitted from $SLURM_SUBMIT_HOST ($SLURM_CLUSTER_NAME)"
+echo ""
+# Print slurm config report (SLURM environment variables, some of which we use later in the script)
+# By sourcing the script, we execute it as if its code were here in the script
+# N.B. This script only prints things out, it doesn't assign any environment variables.
+echo "Running slurm/utils/report_slurm_config.sh"
+source "slurm/utils/report_slurm_config.sh"
+# Print repo status report (current branch, commit ref, where any uncommitted changes are located)
+# N.B. This script only prints things out, it doesn't assign any environment variables.
+echo "Running slurm/utils/report_repo.sh"
+source "slurm/utils/report_repo.sh"
+echo ""
+if false; then
+    # Print disk usage report, to catch errors due to lack of file space.
+    # This is disabled by default to prevent confusing new users with too
+    # much output.
+    echo "------------------------------------"
+    echo "df -h:"
+    # Print header, then sort the rows alphabetically by mount point
+    df -h --output=target,pcent,size,used,avail,source | head -n 1
+    df -h --output=target,pcent,size,used,avail,source | tail -n +2 | sort -h
+    echo ""
+fi
+echo "-------- Input handling ------------------------------------------------"
+date
+echo ""
+# Use the SLURM job array to select the seed for the experiment
+SEED="$SLURM_ARRAY_TASK_ID"
+if [[ "$SEED" == "" ]];
+then
+    SEED=0
+fi
+echo "SEED = $SEED"
+
+# Check if the first argument is a path to the python script to run
+if [[ "$1" == *.py ]];
+then
+    # If it is, we'll run this python script and remove it from the list of
+    # arguments to pass on to the script.
+    SCRIPT_PATH="$1"
+    shift
+else
+    # Otherwise, use our default python training script.
+    SCRIPT_PATH="zs_ssl_probing/eval_knn.py"
+fi
+echo "SCRIPT_PATH = $SCRIPT_PATH"
+
+# Any arguments provided to sbatch after the name of the slurm script will be
+# passed through to the main script later.
+# (The pass-through works like *args or **kwargs in python.)
+echo "Pass-through args: ${@}"
+echo ""
+echo "-------- Activating environment ----------------------------------------"
+date
+echo ""
+echo "Running ~/.bashrc"
+source ~/.bashrc
+
+# Activate virtual environment
+ENVNAME="$PROJECT_NAME"
+echo "Activating conda environment $ENVNAME"
+conda activate "$ENVNAME"
+echo ""
+# Print env status (which packages you have installed - useful for diagnostics)
+# N.B. This script only prints things out, it doesn't assign any environment variables.
+echo "Running slurm/utils/report_env_config.sh"
+source "slurm/utils/report_env_config.sh"
+
+if [[ "$SLURM_RESTART_COUNT" > 0 ]];
+then
+    echo ""
+    echo "====================================================================="
+    echo "SLURM SCRIPT ERROR:"
+    echo "    Resuming after pre-emption (SLURM_RESTART_COUNT=$SLURM_RESTART_COUNT)"
+    echo "    but this job does not checkpoint, so there is no progress to resume."
+    echo "====================================================================="
+    exit 1;
+fi;
+
+echo ""
+echo "------------------------------------"
+elapsed=$(( SECONDS - start_time ))
+eval "echo Running total elapsed time for restart $SLURM_RESTART_COUNT: $(date -ud "@$elapsed" +'$((%s/3600/24)) days %H hr %M min %S sec')"
+echo ""
+echo "-------- Begin main script ---------------------------------------------"
+date
+echo ""
+# Run script
+python "$SCRIPT_PATH" \
+    --nb_knn 1 2 5 10 20 50 100 200 \
+    --train_feat_dir ./embeddings/train__z1.0/ \
+    --test_feat_dir ./embeddings/test__z1.0/ \
+    --use_cuda \
+    "${@}"
+
+echo ""
+echo "------------------------------------"
+elapsed=$(( SECONDS - start_time ))
+eval "echo Running total elapsed time for restart $SLURM_RESTART_COUNT: $(date -ud "@$elapsed" +'$((%s/3600/24)) days %H hr %M min %S sec')"
+echo ""
+echo "------------------------------------------------------------------------"
+echo ""
+echo "Job $SLURM_JOB_NAME ($SLURM_JOB_ID) finished, submitted from $SLURM_SUBMIT_HOST ($SLURM_CLUSTER_NAME)"
+date
+echo "------------------------------------"
+elapsed=$(( SECONDS - start_time ))
+eval "echo Total elapsed time for restart $SLURM_RESTART_COUNT: $(date -ud "@$elapsed" +'$((%s/3600/24)) days %H hr %M min %S sec')"
+echo "========================================================================"
