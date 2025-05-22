@@ -148,13 +148,13 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--train_feat_dir",
-        default="/home/create.aau.dk/joha/zsssl_embeddings/zs_ssl_train/",
+        default="./embeddings/train__z1.0",
         help="""If the features have
         already been computed, where to find them.""",
     )
     parser.add_argument(
         "--test_feat_dir",
-        default="/home/create.aau.dk/joha/zsssl_embeddings/zs_ssl_test/",
+        default="./embeddings/test__z1.0",
         help="""If the features have
         already been computed, where to find them.""",
     )
