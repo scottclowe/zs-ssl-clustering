@@ -161,7 +161,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     print(
-        "/n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items()))
+        "\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items()))
     )
     cudnn.benchmark = True
 
